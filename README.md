@@ -2,6 +2,9 @@
 
 ![](./img/banner.png)
 
+> [!IMPORTANT]
+> Australis firmware is under active development, with changes being pushed to a private remote. This repository and its branches are currently seeing less frequent updates in the form of pre-release versions whilst these changes are underway.
+
 <div align="center">
 
 ## FreeRTOS Based Firmware For Australis Series Flight Computers
@@ -153,3 +156,4 @@ Other members of the Aurora V Avionics team:
 Thank you to Aurora & Legacy project team leads Patrick Underwood and Brodie Alexander for providing the opportunity and environment to work on these rockets as part of the team, and thank you to everyone who helped make them a reality!
 
 ![](./img/footer.png)
+
