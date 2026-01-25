@@ -1,6 +1,6 @@
 <!-- Document Start -->
 
-![](./img/banner.png)
+![](https://github.com/RMIT-Hive-Rocketry/Australis-Avionics-firmware/raw/master/img/banner.png)
 
 <div align="center">
 
@@ -24,9 +24,10 @@
 
 ---
 
-*Operating avionics hardware for winning rocket of Technical Excellence Award and runner's up overall in AURC 2024* - Aurora V
+_Operating avionics hardware for winning rocket of Technical Excellence Award and runner's up overall in AURC 2024_ - Aurora V
 
-*Powering IREC & AURC 2025 entries for avionics subsystem* - Legacy III
+_Powering IREC & AURC 2025 entries for avionics subsystem_ - Legacy III
+
 </div>
 
 > [!WARNING]
@@ -40,22 +41,23 @@ This repository contains the firmware for the Australis series flight computers,
 
 <div align="center">
  
-![Australis](https://github.com/user-attachments/assets/267ad69c-c3d9-4c79-989a-9a70088bd931)
+![Australis](https://github.com/RMIT-Hive-Rocketry/Australis-Avionics-firmware/raw/master/img/Australis.png)
  
 Australis version 2 (_**AV2**_) flight-computer hardware platform
 </div>
 
 > [!NOTE]
-> The firmware is designed to run on various hardware platforms, with explicit support for `STM32F439` microcontrollers, however the _**AV2**_ system (pictured above) is the basis for implementation. While other platforms are supported unofficially as extended targets, correct operation is not guaranteed. 
+> The firmware is designed to run on various hardware platforms, with explicit support for `STM32F439` microcontrollers, however the _**AV2**_ system (pictured above) is the basis for implementation. While other platforms are supported unofficially as extended targets, correct operation is not guaranteed.
 
 ## Table of Contents
+
 1. [Getting Started](#getting-started)
-   *   [Docker Environment](#docker-environment)
-   *   [Documentation](#documentation)
+   - [Docker Environment](#docker-environment)
+   - [Documentation](#documentation)
 2. [FAQ](#faq)
 3. [Contributions](#contributions)
 4. [Acknowledgements](#acknowledgements)
-  
+
 ## Getting Started
 
 For a detailed guide to get started with the project, follow the instructions in the [Firmware README](firmware/README.md). This includes information on setting up the build environment, building the firmware, and running it on supported hardware platforms.
@@ -82,7 +84,7 @@ This repository provides a containerised development environment to simplify the
    docker compose run --rm australis-dev
    ```
 
-   This will build the image, if not already available, and enter a running container in the project root: `/firmware` (`/src/firmware` on the container's filesystem). 
+   This will build the image, if not already available, and enter a running container in the project root: `/firmware` (`/src/firmware` on the container's filesystem).
 
    The `--rm` flag deletes the container on exit, this is desirable as the container mounts the repository in the host filesystem into the running container, enabling editing on the host while using the container to manage building and deployment.
 
@@ -113,16 +115,15 @@ For detailed information about the project, including build instructions, code g
 Australis is a combined firmware and hardware platform designed for high degrees of flexibility and redundancy in its implementation. The system supports a core architecture that provides all the tools necessary for creating and operating a complete flight computer for any rocket configuration.
 
 > Q: What makes the system flexible?
- 
-Australis sports various hardware interconnects and a range of highly modular firmware systems provided to enable your designs. _**AV2**_ boards each provide two directly connected microcontrollers, and may be interconnected with other boards, primarily via `CAN`. 
+
+Australis sports various hardware interconnects and a range of highly modular firmware systems provided to enable your designs. _**AV2**_ boards each provide two directly connected microcontrollers, and may be interconnected with other boards, primarily via `CAN`.
 
 > Q: What makes the system redundant?
 
 Redundant apogee detection and recovery deployment is currently under development for official firmware targetting _**AV2**_. The approach follows a _triple-mode-redundant_ (TMR) architecture designed for a dual-board setup with two stages of redundancy:
 
 1. In hardware, one microcontroller on the bus is dedicated the role of **arbiter**. The **arbiter** is in charge of collating "votes" from the other three microcontrollers, and when it determines a majority vote it activates the recovery output interlocks and detonates the energetics
-   
-2. Each remaining microcontroller provides the role of **voter**, maintaining an active estimate of their flight-state dynamics. The physical system state is considered a global input to each **voter**, where the processed state variables determine the input redundancy stage through a "vote" on the output when at least two of the following three conditions are met: 
+2. Each remaining microcontroller provides the role of **voter**, maintaining an active estimate of their flight-state dynamics. The physical system state is considered a global input to each **voter**, where the processed state variables determine the input redundancy stage through a "vote" on the output when at least two of the following three conditions are met:
    - _Vertical velocity (ground axis referenced) is negative_
    - _Barometric pressure is increasing_
    - _Tilt angle (ground axis referenced) is greater than 90°_
@@ -136,19 +137,21 @@ Contributions to the project are welcome. Please refer to the [contributing guid
 ## Acknowledgements
 
 ### Key Contributors
+
 | Name              | Role                           |
-|:------------------|:-------------------------------|
+| :---------------- | :----------------------------- |
 | Matthew Ricci     | Principal firmware developer   |
 | William Houlahan  | Initial driver implementations |
 | Benjamin Wilsmore | Initial driver implementations |
 
 ### Special Thanks
+
 Other members of the Aurora V Avionics team:
 
-- Hugo Begg - *avionics hardware*
-- Jonathan Chandler - *ground control station*
-- Jeremy Timotius - *data analysis*
-- Lucas Webb - *ground control station*
+- Hugo Begg - _avionics hardware_
+- Jonathan Chandler - _ground control station_
+- Jeremy Timotius - _data analysis_
+- Lucas Webb - _ground control station_
 
 Thank you to Aurora & Legacy project team leads Patrick Underwood and Brodie Alexander for providing the opportunity and environment to work on these rockets as part of the team, and thank you to everyone who helped make them a reality!
 
