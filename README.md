@@ -88,7 +88,12 @@ This repository provides a containerised development environment to simplify the
 
    The `--rm` flag deletes the container on exit, this is desirable as the container mounts the repository in the host filesystem into the running container, enabling editing on the host while using the container to manage building and deployment.
 
-4. Follow the steps outlined in the [Firmware README](firmware/README.md) to build and deploy the project.
+4. Build the project by the following command, with `HARDWARE_TARGET` defined as you need.
+
+   ```bash
+   cmake -DCMAKE_TOOLCHAIN_FILE=australis/toolchain/toolchain.cmake -DHARDWARE_TARGET=? .
+   make
+   ```
 
 #### Common Issues
 

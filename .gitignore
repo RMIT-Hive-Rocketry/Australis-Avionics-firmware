@@ -16,3 +16,12 @@
 **/difflog*
 **/diffsummary*
 documentation/docs/html
+
+# Ignore output from CMake
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+_deps/
+compile_commands.json
+cpm-package-lock.cmake
