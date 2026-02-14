@@ -199,12 +199,22 @@ typedef struct {
 
 } CAN_Config;
 
-// TODO: Remove
+
 typedef struct {
   uint32_t id;
+  CAN_Data data;
+} CAN_Packet;
+
+
+typedef struct {
+  union {
+    uint8_t  byte[8];
+    uint32_t word[2];
+  };
   uint8_t length;
-  uint32_t data[2];
 } CAN_Data;
+
+
 
 // TODO: Populate and complete documentation comments:
 
@@ -217,8 +227,30 @@ typedef struct CAN {
 } CAN_t;
 
 CAN_t CAN_init(CAN_TypeDef *interface, CAN_Config *config);
-uint8_t CAN_transmit(CAN_t *can, CAN_Data *txData);
-bool CAN_receive(CAN_t *can, CAN_Data *rxData);
+
+
+// CAN_transmit
+typedef enum {
+  Return_CAN_transmit__Success,
+  Return_CAN_transmit__Mailbox_Full,
+  Return_CAN_transmit__TX_Error,
+  Return_CAN_transmit__Timeout
+} Return_CAN_transmit_t;
+
+Return_CAN_transmit_t
+CAN_transmit(CAN_t *can, CAN_Data *txData);
+
+
+// CAN_receive
+typedef enum {
+  Return_CAN_receive__Message_Received,
+  Return_CAN_receive__Message_Pending_None
+} Return_CAN_receive_t;
+
+Return_CAN_receive_t
+CAN_receive(CAN_t *can, CAN_Data *rxData);
+
+
 void CAN_updateConfig(CAN_t *can, CAN_Config *config);
 
 #endif

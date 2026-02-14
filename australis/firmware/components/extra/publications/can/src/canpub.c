@@ -1,5 +1,5 @@
 /**************************************************************************************************
- * @file  uartcomm.c                                                                              *
+ * @file  canpub.c                                                                                *
  * @brief Implements the FreeRTOS tasks and Interrupt Service Routine (ISR)                       *
  *        responsible for managing uart communication.                                            *
  *                                                                                                *
@@ -19,21 +19,74 @@
 #include "projdefs.h"
 #include "queue.h"
 
-#include "_topic.h"
+// #include "_topic.h"
 #include "can.h"
 #include "rcc.h"
 #include "gpiopin.h"
 
-// Create publication topic for UART data
-//
-// NOTE:
-// This topic is exposed for reader
-// comments in the public header.
-CREATE_TOPIC(can, 10, CAN_MSG_LENGTH)
-Topic *canTopic = (Topic *)&can;
 
 static TaskHandle_t vCanTransmitHandle;
 static TaskHandle_t vCanReceiveHandle;
+
+
+// All CAN_Queue_t types must be tracked in this array for vCanReceive
+static CAN_Queue_t* can_broadcast[CAN_LISTENERS];
+static uint8_t can_listener_count = 0;
+
+
+void CAN_Queue_Create(CAN_Queue_t* target, uint32_t id) {
+  
+  // Create the queue data structure.
+  target->id = id;
+  target->queue = xQueueCreateStatic(CAN_QUEUE_LENGTH,
+                                     sizeof(CAN_Data),
+                                     &target->_pucQueueStorageBuffer,
+                                     &target->_pucQueueBuffer);
+
+  // Did queue creation fail?
+  if (target->queue == NULL) {
+    return Return_CAN_Queue_Create__Error_QueueCreateStatic_Failed;
+  }
+
+  // Register the queue for reception.
+  if (can_listener_count < CAN_LISTENERS_MAX) {
+    can_broadcast[can_listener_count++] = target;
+  } else {
+    return Return_CAN_Queue_Create__Error_Too_Many_Listeners;
+  }
+
+  // Everything was successful.
+  return Return_CAN_Queue_Create__Success;
+}
+
+// CAN transmission queue data structures.
+QueueHandle_t CAN_Transmission_Queue;
+static uint8_t CAN_Transmission_Queue_pucQueueStorageBuffer[CAN_TRANSMISSION_QUEUE_LENGTH*sizeof(CAN_Packet)];
+static StaticQueue_t CAN_Transmission_Queue_pxQueueBuffer;
+
+
+Return_CAN_Transmission_Queue_t
+CAN_Transmission_Queue_Add(CAN_Packet* packet) {
+
+  // Create transmission queue on first run.
+  static bool queue_init = false;
+  if (!queue_init) {
+    CAN_Transmission_Queue = xQueueCreateStatic(CAN_TRANSMISSION_QUEUE_LENGTH,
+                                                sizeof(CAN_Packet),
+                                                &CAN_Transmission_Queue_pucQueueStorageBuffer,
+                                                &CAN_Transmission_Queue_pucQueueBuffer);
+    queue_init = true;
+  }
+
+
+  if (xQueueSend(CAN_Transmission_Queue, packet, 0) == errQUEUE_FULL) {
+    return CAN_Transmission_Queue_Add__Error_Queue_Full;
+  }
+
+  return CAN_Transmission_Queue_Add__Success;
+
+}
+
 
 // LoRa transceiver device
 //
@@ -47,12 +100,25 @@ void CAN_setPeripheral(CAN_t *peripheral_) {
 
 void __attribute__((constructor)) init() {
   RCC_START_PERIPHERAL(APB1, CAN1);
+
+  GPIO_Config rx_cfg = GPIO_CONFIG_DEFAULT;
+  rx_cfg.mode        = GPIO_MODE_AF;
+  rx_cfg.afr         = CAN_AF;
+  rx_cfg.pupd        = GPIO_PUPD_PULLUP; // Pull-up for default recessive bus.
+
+  GPIO_Config tx_cfg = GPIO_CONFIG_DEFAULT;
+  tx_cfg.mode        = GPIO_MODE_AF;
+  tx_cfg.afr         = CAN_AF;
+
+  GPIOpin_t rxd   = GPIOpin_init(CAN_PORT, CAN_RXD, &rx_cfg);
+  GPIOpin_t txd   = GPIOpin_init(CAN_PORT, CAN_TXD, &tx_cfg);
+
   // CANGPIO_config();
   // CAN_Peripheral_config();
 
-  // static CAN_t c;
-  // c = CAN_init(CAN1, NULL);
-  // CAN_setPeripheral(&c);
+  static CAN_t c;
+  c = CAN_init(CAN1, NULL);
+  peripheral = &c;
 }
 
 /* ============================================================================================== */
@@ -73,25 +139,32 @@ void vCanTransmit(void *argument) {
       continue;
     }
 
-    // Wait to receive message to transmit
-    // BaseType_t result = WAIT_COMMENT(
-    //  can.public.commentInbox, // Read from LoRa topic comment queue
-    //  (void *)&txData,         // Store data in binary array
-    //  portMAX_DELAY            // Block forever until comment is available
-    //);
 
-    // if (result == pdTRUE) {
-    //  Transmit data if successfully retrieved from queue
+    // Loop through messages waiting in the mailbox.
+    while (uxQueueMessagesWaiting(CAN_Transmission_Queue) > 0) {
 
+      // Peek next packet, don't receive because we're not sure if transmission
+      // will succeed.
+      xQueuePeek(CAN_Transmission_Queue, &txData, 0);
+
+      // Perform transmission
+      Return_CAN_transmit_t Return_CAN_transmit = CAN_transmit(peripheral, &txData);
+
+      
+      if (Return_CAN_transmit == Return_CAN_transmit__Success) {
+        // If transmission succeeds, flush packet out of queue.
+        xQueueReceive(CAN_Transmission_Queue, &txData, 0);
+      } else if (Return_CAN_transmit == Return_CAN_transmit__Mailbox_Full) {
+        break;
+      } else {
+        // A more severe error has occurred, either a timeout or a TX failure.
+      }
+      
+    }
+    
     TickType_t xLastWakeTime = xTaskGetTickCount();
     vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(150));
 
-    txData.id      = 0x603;
-    txData.length  = 8;
-    txData.data[0] = 25;
-    txData.data[1] = 59;
-    CAN_transmit(peripheral, &txData);
-    //}
   }
 }
 
@@ -103,7 +176,7 @@ void vCanTransmit(void *argument) {
  * ============================================================================================== */
 void vCanReceive(void *argument) {
   const TickType_t blockTime = portMAX_DELAY;
-  CAN_Data rxData;
+  CAN_Packet rxData;
 
   vCanReceiveHandle   = xTaskGetCurrentTaskHandle();
 
@@ -120,12 +193,25 @@ void vCanReceive(void *argument) {
 
     indicator.toggle(&indicator);
 
-    CAN_receive(peripheral, &rxData);
 
-    peripheral->interface->IER |= CAN_IER_FMPIE0;
+    Return_CAN_receive_t Return_CAN_receive;
+    Return_CAN_receive = CAN_receive(peripheral, &rxData);
+    
+    if (Return_CAN_receive == Return_CAN_receive__Message_Received) {
 
-    // Publish packet data to topic
-    // Topic_publish((PrivateTopic *)canTopic, (uint8_t *)&rxData);
+      //TODO What is the purpose of this line?
+      peripheral->interface->IER |= CAN_IER_FMPIE0;
+      //IER_FMPIE0: FIFO message pending interrupt enable
+
+      // Send the message to any queues listening for the ID.
+      for (uint8_t can_listener = 0; can_listener < can_listener_count; can_listener++) {
+        if (can_broadcast[can_listener]->id == rxData.id) {
+          xQueueSend(can_broadcast[can_listener]->queue,
+                     &can_broadcast[can_listener]->data, 0);
+        }
+      }
+    }
+    
   }
 }
 

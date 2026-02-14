@@ -2,12 +2,54 @@
 #ifndef CANPUB_H
 #define CANPUB_H
 
-#include "topic.h"
+//#include "topic.h"
 #include "can.h"
 
 #define CAN_MSG_LENGTH 8
 
-extern Topic *canTopic;
+//extern Topic *canTopic;
+
+
+#define CAN_LISTENERS_MAX 8
+// How many instances of listening to CAN?
+
+#define CAN_QUEUE_LENGTH 8
+
+#define CAN_TRANSMISSION_QUEUE_LENGTH 16
+
+typedef struct {
+  uint32_t id;
+  QueueHandle_t queue;
+  uint8_t _pucQueueStorageBuffer[CAN_QUEUE_LENGTH*sizeof(CAN_Data)];
+  StaticQueue_t _pxQueueBuffer;  
+} CAN_Queue_t;
+//TODO: consider adding a set for concurrent read/write?
+
+
+// CAN_Queue_Create
+// Create a FreeRTOS queue to which received CAN packets matching the ID
+// will be sent to.
+typedef enum {
+  Return_CAN_Queue_Create__Success,
+  Return_CAN_Queue_Create__Error_QueueCreateStatic_Failed,
+  Return_CAN_Queue_Create__Error_Too_Many_Listeners
+} Return_CAN_Queue_Create_t;
+
+Return_CAN_Queue_Create_t
+CAN_Queue_Create(CAN_Queue_t* target, uint32_t id);
+
+
+extern QueueHandle_t CAN_Transmission_Queue;
+
+// CAN_Transmission_Queue_Add
+typedef enum {
+  Return_CAN_Transmission_Queue_Add__Success,
+  Return_CAN_Transmission_Queue_Add__Error_Queue_Full
+} Return_CAN_Transmission_Queue_Add_t;
+
+Return_CAN_Transmission_Queue_Add_t
+CAN_Transmission_Queue_Add(CAN_Packet packet);
+
 
 void vCanTransmit(void *pvParameters);
 void vCanReceive(void *pvParameters);

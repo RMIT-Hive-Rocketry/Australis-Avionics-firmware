@@ -170,16 +170,15 @@ static void _CAN_init(CAN_TypeDef *interface, CAN_Config *config) {
  *
  * @return
  *
- * TODO:
- * can forgo CAN_Data struct in favour of uin64_t type (struct is a remnant of
- * some external legacy code)
  **
  * =============================================================================== */
-bool CAN_receive(CAN_t *can, CAN_Data *rxData) {
+Return_CAN_receive_t
+CAN_receive(CAN_t *can, CAN_Packet *rxData) {
 
   volatile uint32_t *fifo = (can->interface == CAN1) ? &CAN1->RF0R : &CAN2->RF1R;
   uint8_t nFifo           = (can->interface == CAN1) ? 0 : 1;
 
+  // If there are messages pending, then receive it.
   if (*fifo & CAN_RF0R_FMP0) {
     // Read frame identifier and received data
     rxData->id =
@@ -188,17 +187,17 @@ bool CAN_receive(CAN_t *can, CAN_Data *rxData) {
         : (can->interface->sFIFOMailBox[nFifo].RIR & CAN_RI0R_STID) >> CAN_RI0R_STID_Pos;
 
     // Read data out
-    rxData->data[CAN_DATA_INDEX_LOW]  = can->interface->sFIFOMailBox[nFifo].RDLR;
-    rxData->data[CAN_DATA_INDEX_HIGH] = can->interface->sFIFOMailBox[nFifo].RDHR;
+    rxData->data.word[CAN_DATA_INDEX_LOW]  = can->interface->sFIFOMailBox[nFifo].RDLR;
+    rxData->data.word[CAN_DATA_INDEX_HIGH] = can->interface->sFIFOMailBox[nFifo].RDHR;
 
     // Update FIFO register
     *fifo |= CAN_RF0R_RFOM0;  // Release FIFO
     *fifo &= ~CAN_RF0R_FOVR0; // Clear overrun flag
     *fifo &= ~CAN_RF0R_FULL0; // Clear FIFO full flag
-    return true;
+    return Return_CAN_receive__Message_Received_Success;
   }
 
-  return false; // No frame to receive
+  return Return_CAN_receive__No_Messages; // No frame to receive
 }
 
 /* =============================================================================== */
@@ -210,24 +209,25 @@ bool CAN_receive(CAN_t *can, CAN_Data *rxData) {
  * @return
  **
  * =============================================================================== */
-uint8_t CAN_transmit(CAN_t *can, CAN_Data *txData) {
+Return_CAN_transmit_t
+CAN_transmit(CAN_t *can, CAN_Packet *txData) {
 
   // Exit if no mailboxes are free
   bool mailboxFree = (can->interface->TSR & CAN_TSR_TME) ? true : false;
   if (!mailboxFree) {
-    return 1; // Cannot transmit yet; retry later.
+    return Return_CAN_transmit__Mailbox_Full;
   }
 
   // Retrieve index of the next free mailbox.
   uint8_t mailbox = (can->interface->TSR & CAN_TSR_CODE_Msk) >> CAN_TSR_CODE_Pos;
 
   // Set frame data
-  can->interface->sTxMailBox[mailbox].TDHR = txData->data[1];
-  can->interface->sTxMailBox[mailbox].TDLR = txData->data[0];
-  can->interface->sTxMailBox[mailbox].TDTR = txData->length;
+  can->interface->sTxMailBox[mailbox].TDHR = txData->data.word[CAN_DATA_INDEX_HIGH];
+  can->interface->sTxMailBox[mailbox].TDLR = txData->data.word[CAN_DATA_INDEX_LOW];
+  can->interface->sTxMailBox[mailbox].TDTR = txData->data.length;
 
   // Set frame identifier
-  if (txData->id <= CAN_STID_MAX) {
+  if (txData->id < CAN_STID_MAX) {
     // Use STID if within range of standard identifier length
     can->interface->sTxMailBox[mailbox].TIR = txData->id << CAN_TI0R_STID_Pos;
   } else {
@@ -262,13 +262,13 @@ uint8_t CAN_transmit(CAN_t *can, CAN_Data *txData) {
   // TODO: Add timer for timeout detection
   while (1) {
     if (can->interface->TSR & CAN_TSR_TXOKx) {
-      return 0; // Success
+      return Return_CAN_transmit__Success;
     } else if (can->interface->TSR & CAN_TSR_TERRx) {
       can->interface->TSR |= CAN_TSR_ABRQx;
-      return 1; // TX error
+      return Return_CAN_transmit__TX_Error;
     }
   }
-  return 255;
+  return Return_CAN_transmit__Timeout;
 }
 
 /* =============================================================================== */
@@ -298,3 +298,4 @@ void CAN_updateConfig(CAN_t *can, CAN_Config *config) {
   // Initialise CAN registers and enable peripheral
   _CAN_init(can->interface, config);
 }
+

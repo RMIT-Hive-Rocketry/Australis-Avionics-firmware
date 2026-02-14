@@ -21,3 +21,9 @@ target_include_directories(${MODULE_NAME}
   PUBLIC
     inc/
 )
+
+add_library(${MODULE_NAME}_headers INTERFACE)
+target_include_directories(${MODULE_NAME}_headers
+  INTERFACE
+    inc/
+)

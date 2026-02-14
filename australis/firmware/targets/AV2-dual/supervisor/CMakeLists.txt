@@ -14,7 +14,7 @@ build_australis_variant(
     "drivers/sensors/gyro/iam_20380"
     "drivers/sensors/baro/lps22df"
     "drivers/flash/w25q128"
-#   "publications/can"
+    "publications/can"
   VARIANT_SOURCES
     "src/main.c"
     "src/devices.c"

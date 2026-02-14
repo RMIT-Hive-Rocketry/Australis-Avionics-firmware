@@ -17,7 +17,7 @@ build_australis_variant(
     "drivers/lora/sx1272"
     "drivers/gps/sam_m10q"
     "publications/lora"
-#   "publications/can"
+    "publications/can"
   VARIANT_SOURCES
     "src/main.c"
     "src/devices.c"
