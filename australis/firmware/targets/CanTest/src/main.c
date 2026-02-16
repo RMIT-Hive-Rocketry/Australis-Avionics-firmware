@@ -47,14 +47,14 @@ typedef struct {
  **
  * =============================================================================== */
 void CAN_rxCallback(void *context) {
-  CAN_Data data;
+  CAN_Packet data;
 
   CAN_context *ctx = context;
 
   ctx->bus.receive(&ctx->bus, &data);
   ctx->led1.toggle(&ctx->led1);
 
-  if (data.data[0] % 4 == 0) {
+  if (data.word[0] % 4 == 0) {
     ctx->led2.toggle(&ctx->led2);
   }
 }
@@ -69,6 +69,7 @@ int main() {
 
   // Initialise RCC
   initRCC();
+  
 
   static CAN_context ctx;
 

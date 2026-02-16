@@ -201,35 +201,20 @@ typedef struct {
 
 
 typedef struct {
+  uint8_t word[2];
+  uint8_t length;
+} CAN_Data;
+
+
+typedef struct {
   uint32_t id;
   CAN_Data data;
 } CAN_Packet;
 
 
-typedef struct {
-  union {
-    uint8_t  byte[8];
-    uint32_t word[2];
-  };
-  uint8_t length;
-} CAN_Data;
 
 
 
-// TODO: Populate and complete documentation comments:
-
-typedef struct CAN {
-  CAN_TypeDef *interface;                                    //!<
-  CAN_Config config;                                         //!<
-  uint8_t (*transmit)(struct CAN *can, CAN_Data *txData);    //!<
-  bool (*receive)(struct CAN *can, CAN_Data *rxData);        //!<
-  void (*updateConfig)(struct CAN *can, CAN_Config *config); //!<
-} CAN_t;
-
-CAN_t CAN_init(CAN_TypeDef *interface, CAN_Config *config);
-
-
-// CAN_transmit
 typedef enum {
   Return_CAN_transmit__Success,
   Return_CAN_transmit__Mailbox_Full,
@@ -237,19 +222,31 @@ typedef enum {
   Return_CAN_transmit__Timeout
 } Return_CAN_transmit_t;
 
-Return_CAN_transmit_t
-CAN_transmit(CAN_t *can, CAN_Data *txData);
-
-
-// CAN_receive
 typedef enum {
   Return_CAN_receive__Message_Received,
   Return_CAN_receive__Message_Pending_None
 } Return_CAN_receive_t;
 
-Return_CAN_receive_t
-CAN_receive(CAN_t *can, CAN_Data *rxData);
 
+// TODO: Populate and complete documentation comments:
+
+typedef struct CAN {
+  CAN_TypeDef *interface;                                                 //!<
+  CAN_Config config;                                                      //!<
+  Return_CAN_transmit_t (*transmit)(struct CAN *can, CAN_Packet *txData); //!<
+  Return_CAN_receive_t (*receive)(struct CAN *can, CAN_Packet *rxData);   //!<
+  void (*updateConfig)(struct CAN *can, CAN_Config *config);              //!<
+} CAN_t;
+
+
+Return_CAN_transmit_t
+CAN_transmit(CAN_t *can, CAN_Packet *txData);
+
+Return_CAN_receive_t
+CAN_receive(CAN_t *can, CAN_Packet *rxData);
+
+
+CAN_t CAN_init(CAN_TypeDef *interface, CAN_Config *config);
 
 void CAN_updateConfig(CAN_t *can, CAN_Config *config);
 

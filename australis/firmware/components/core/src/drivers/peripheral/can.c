@@ -194,10 +194,10 @@ CAN_receive(CAN_t *can, CAN_Packet *rxData) {
     *fifo |= CAN_RF0R_RFOM0;  // Release FIFO
     *fifo &= ~CAN_RF0R_FOVR0; // Clear overrun flag
     *fifo &= ~CAN_RF0R_FULL0; // Clear FIFO full flag
-    return Return_CAN_receive__Message_Received_Success;
+    return Return_CAN_receive__Message_Received;
   }
 
-  return Return_CAN_receive__No_Messages; // No frame to receive
+  return Return_CAN_receive__Message_Pending_None; // No frame to receive
 }
 
 /* =============================================================================== */
