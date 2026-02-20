@@ -46,7 +46,9 @@ void vGroundCommStateMachine(void *argument) {
   const TickType_t xFrequency = pdMS_TO_TICKS(250);
 
   // Create subscription to LoRa topic
-  static SUBSCRIBE_TOPIC(lora, loraSubInbox, 10, LORA_MSG_LENGTH);
+  Broadcast_Queue_Member_t subscription;
+  Broadcast_Queue_Subscribe(&BQueue_LoRa_Received, &subscription);
+
   // Binary array to store LoRa topic articles
   uint8_t loraRxData[LORA_MSG_LENGTH];
 
@@ -73,7 +75,7 @@ void vGroundCommStateMachine(void *argument) {
       // --- Wait For Request ---
       // Block the state machine until a valid request is received from the ground.
       // Unwanted packets are filtered out and ignored.
-      if (xQueueReceive(loraSubInbox, loraRxData, xFrequency)) {
+      if (xQueueReceive(subscription.queue, loraRxData, xFrequency) == pdPASS) {
         // Check if the received message has the expected GCS Request ID
         switch (loraRxData[LORA_MESSAGE_INDEX_ID]) {
 
@@ -117,7 +119,7 @@ void vGroundCommStateMachine(void *argument) {
       else {
         // --- Wait for the "Start Broadcast" command from GCS ---
         // Block forever waiting for a message on the LoRa receive queue
-        if (xQueueReceive(loraSubInbox, loraRxData, xFrequency)) {
+        if (xQueueReceive(subscription.queue, loraRxData, xFrequency)) {
           // Check if it's the GCS command (ID match) AND the broadcast flag is set
           if (loraRxData[LORA_MESSAGE_INDEX_ID] == LORA_MESSAGE_ID_GCS_REQUEST) { // Check if broadcast flag byte is non-zero
             // Update broadcast flag
@@ -149,8 +151,10 @@ void sendGroundPacket1(uint8_t broadcastBegin) {
 
   const size_t packetLength = 9;
   const size_t packetSize   = 32;
-  uint8_t bytes[packetSize + 1];
-  bytes[0]           = packetSize;
+
+  LoRa_Message_t bytes;
+  bytes.length  = 1 + packetSize;
+  bytes.data[0] = packetSize;
 
   uint8_t stateFlags = (state->flightState << 5);
 
@@ -219,11 +223,11 @@ void sendGroundPacket1(uint8_t broadcastBegin) {
       };
 
     // Construct byte array from packet structure
-    Packet_asBytes(&packet, &bytes[1], 32);
+    Packet_asBytes(&packet, &bytes.data[1], packetSize);
   }
 
   // Send packet comment to LoRa author
-  Topic_comment(loraTopic, bytes);
+  xQueueSend(Queue_LoRa_Transmit, bytes)
 }
 
 /* =============================================================================== */
@@ -234,7 +238,8 @@ void sendGroundPacket1(uint8_t broadcastBegin) {
  * =============================================================================== */
 void sendGroundPacket2(SAM_M10Q_Data *data) {
 
-  CREATE_MESSAGE(message, 28);
+  LoRa_Message_t message;
+  message.length = 28;
 
   State *state       = State_getState();
   Quaternion q       = state->rotation;
@@ -306,7 +311,7 @@ void sendGroundPacket2(SAM_M10Q_Data *data) {
   }
 
   // Send packet comment to LoRa author
-  Topic_comment(loraTopic, (uint8_t *)&message);
+  xQueueSend(Queue_LoRa_Transmit, message);
 }
 
 /** @} */

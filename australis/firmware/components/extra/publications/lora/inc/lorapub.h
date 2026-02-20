@@ -7,11 +7,22 @@
 #include "gpiopin.h"
 
 typedef struct {
-  LoRa_t *transceiver;
-  GPIOpin_t *rfToggle;
-  volatile bool *ready;
-} PubLora_Context;
+  size_t length;
+  uint8_t data[LORA_MSG_LENGTH];
+} LoRa_Message_t;
+
+// Public queue for submitting data for transmission.
+extern QueueHandle_t Queue_LoRa_Transmit;
+#define QUEUE_LORA_LENGTH 32
+
+// Public broadcast queue for those interested in LoRa messages.
+extern Broadcast_Queue_t BQueue_LoRa_Received;
 
 bool PubLora_startup(TopicHandle_t topic, void *context);
+
+
+void vLoRaTransmit(void *argument)
+void vLoRaReceive(void *argument)
+void loraPub_interrupt(void)
 
 #endif

@@ -36,11 +36,16 @@
 #include "lora.h"
 #include "topic.h"
 #include "_topic.h"
+#include "broadcast_queue.h"
 
 #include "lorapub.h"
 
 static TaskHandle_t vLoRaTransmitHandle;
 static TaskHandle_t vLoRaReceiveHandle;
+
+
+QueueHandle_t Queue_LoRa_Transmit;
+Broadcast_Queue_t BQueue_LoRa_Received;
 
 static bool PubLora_handleComment(TopicHandle_t topic, void *data, size_t size);
 static bool PubLora_acquireData(TopicHandle_t topic);
@@ -53,15 +58,18 @@ static bool PubLora_acquireData(TopicHandle_t topic);
  * =============================================================================== */
 bool PubLora_startup(TopicHandle_t topic, void *context) {
 
-  ASSERT(topic != NULL);
-  ASSERT(context != NULL);
+  Queue_LoRa_Transmit = xQueueCreate(QUEUE_LORA_LENGTH, sizeof(LoRa_Message_t));
 
-  topic->handleComment = PubLora_handleComment;
-  topic->acquireData   = PubLora_acquireData;
-  topic->context       = context;
+  if (Queue_LoRa_Transmit == NULL) {
+    return false;
+  }
+
+  BQueue_LoRa_Received.data_size = sizeof(LoRa_Message_t);
+  BQueue_LoRa_Received.length = 8; //TODO magic number
 
   return true;
 }
+
 
 /* =============================================================================== */
 /**
@@ -163,30 +171,6 @@ static bool PubLora_acquireData(TopicHandle_t topic) {
 }
 
 
-
-// Create publication topic for LoRa data
-//
-// NOTE:
-// This topic is exposed for reader
-// comments in the public header.
-DECLARE_TOPIC(lora);
-Topic *loraTopic = (Topic *)&lora;
-
-// TODO: Replace magic numbers (10, 16) with AustralisConfig defined parameters
-void PubLoRa_initTopic(const char name[10], UBaseType_t priority, LoRa_t *transceiver, GPIOpin_t *rfToggle) {
-  //
-  char txName[16] = "LoRaTx", rxName[16] = "LoRaRx";
-  strncat(txName, name, 16);
-  strncat(rxName, name, 16);
-
-  //
-  INIT_TOPIC(lora, 200);
-
-  //
-  xTaskCreate(vLoRaTransmit, txName, 256, NULL, priority, TaskList_new());
-  xTaskCreate(vLoRaReceive, rxName, 256, NULL, priority, TaskList_new());
-}
-
 // LoRa transceiver device
 //
 // TODO:
@@ -215,25 +199,20 @@ void loraPub_setRfToggle(GPIOpin_t *rfToggle_) {
  **
  * ============================================================================================== */
 void vLoRaTransmit(void *argument) {
-  
+
   const TickType_t blockTime = portMAX_DELAY;
-  
+
   vLoRaTransmitHandle = xTaskGetCurrentTaskHandle();
 
-  //CREATE_MESSAGE(txData, LORA_MSG_LENGTH);
-  MessageBufferHandle_t txData = xMessageBufferCreate(LORA_MSG_LENGTH);
-  
+  LoRa_Message_t txData;
+
   for (;;) {
     // Don't operate unless transceiver is ready
     if (transceiver == NULL)
       continue;
 
     // Wait to receive message to transmit
-    BaseType_t result = xMessageBufferReceive(lora.public.commentInbox, // Read from LoRa topic comment queue
-                                              &txData,                  // Store data in binary array
-                                              txData.length,            //
-                                              portMAX_DELAY             // Block forever until comment is available
-                                              );
+    xQueueReceive(Queue_LoRa_Transmit, &txData, portMAX_DELAY);
 
     // Transmit data if successfully retrieved from queue
     if (result == pdTRUE) {
@@ -264,19 +243,18 @@ void vLoRaTransmit(void *argument) {
  *
  * Handles receiving data from the LoRa transceiver.
  *
- * This task blocks until a notification is sent of a received packet. This can konly occur after
+ * This task blocks until a notification is sent of a received packet. This can only occur after
  * being set to receive mode, either by the transmit task or through a manual override in the
  * driver. Once notified, the packet data is read from the device and published to the LoRa topic.
  **
  * ============================================================================================== */
 void vLoRaReceive(void *argument) {
-  
+
   const TickType_t blockTime = portMAX_DELAY;
 
   vLoRaReceiveHandle = xTaskGetCurrentTaskHandle();
-  
-  //CREATE_MESSAGE(rxData, LORA_MSG_LENGTH);
-  MessageBufferHandle_t rxData = xMessageBufferCreate(LORA_MSG_LENGTH);
+
+  LoRa_Message_t rxData;
 
   for (;;) {
     // Don't operate unless transceiver is ready
@@ -290,7 +268,7 @@ void vLoRaReceive(void *argument) {
     rxData.length = transceiver->readReceive(transceiver, rxData.data, LORA_MSG_LENGTH);
 
     // Publish packet data to topic
-    Topic_publish((PrivateTopic *)&lora, (uint8_t *)&rxData, rxData.length);
+    Broadcast_Queue_Broadcast(&BQueue_LoRa_Received, rxData);
   }
 }
 
