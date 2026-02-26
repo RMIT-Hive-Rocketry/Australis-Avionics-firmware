@@ -64,8 +64,7 @@ bool PubLora_startup(TopicHandle_t topic, void *context) {
     return false;
   }
 
-  BQueue_LoRa_Received.data_size = sizeof(LoRa_Message_t);
-  BQueue_LoRa_Received.length = 8; //TODO magic number
+  BQueue_LoRa_Received = Broadcast_Queue_Create(sizeof(LoRa_Message_t), 8); //TODO magic number
 
   return true;
 }

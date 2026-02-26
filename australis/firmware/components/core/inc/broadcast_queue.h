@@ -28,6 +28,9 @@ typedef struct {
   uint16_t length;              //!< Length of all lists.
 } Broadcast_Queue_t;
 
+Broadcast_Queue_t
+Broadcast_Queue_Create(size_t data_size, uint16_t length);
+
 
 /** @brief A subscriber to a broadcast queue. The next members form a circular
  *  list of subscribers to one broadcast.

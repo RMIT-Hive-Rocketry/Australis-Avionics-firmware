@@ -43,6 +43,17 @@ void UART_setPeripheral(UART_t *peripheral_) {
   peripheral = peripheral_;
 }
 
+
+void UART_Startup() {
+
+  // Initialize the transmit queue
+  Queue_UART_Transmit = xQueueCreate(QUEUE_UART_LENGTH, sizeof(uint8_t));
+
+  BQueue_UART_Received = Broadcast_Queue_Create();
+
+}
+
+
 /* ============================================================================================== */
 /**
  * @brief UART transmit task.
@@ -54,7 +65,7 @@ void vUartTransmit(void *argument) {
   uint8_t txData;
 
   vUartTransmitHandle = xTaskGetCurrentTaskHandle();
-
+  
   for (;;) {
     // Don't operate unless transceiver is ready
     if (peripheral == NULL) {
@@ -62,8 +73,8 @@ void vUartTransmit(void *argument) {
     }
 
     // Wait to receive message to transmit
-    BaseType_t result = WAIT_COMMENT(
-      uart.public.commentInbox, // Read from UART topic comment queue
+    BaseType_t result = xQueueReceive(
+      Queue_UART_Transmit,      // Read from UART topic comment queue
       (void *)&txData,          // Store data in binary array
       portMAX_DELAY             // Block forever until comment is available
     );
@@ -100,7 +111,7 @@ void vUartReceive(void *argument) {
     xTaskNotifyWait(0, 0, &rxData, portMAX_DELAY);
 
     // Publish packet data to topic
-    Topic_publish((PrivateTopic *)uartTopic, (uint8_t *)&rxData);
+    Broadcast_Queue_Broadcast(&BQueue_UART_Received, (uint8_t *)&rxData);
   }
 }
 

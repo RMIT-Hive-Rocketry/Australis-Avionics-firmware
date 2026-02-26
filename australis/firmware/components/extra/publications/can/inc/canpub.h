@@ -2,12 +2,8 @@
 #ifndef CANPUB_H
 #define CANPUB_H
 
-//#include "topic.h"
+#include "broadcast_queue.h"
 #include "can.h"
-
-#define CAN_MSG_LENGTH 8
-
-//extern Topic *canTopic;
 
 
 #define CAN_LISTENERS_MAX 8

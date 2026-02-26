@@ -11,6 +11,17 @@
 #include "queue.h"
 
 
+
+
+
+Broadcast_Queue_t
+Broadcast_Queue_Create(size_t data_size, uint16_t length) {
+  Broadcast_Queue_t bqueue;
+  bqueue.data_size = data_size;
+  bqueue.length    = length;
+  return bqueue;
+}
+
 /* ============================================================================================== */
 /**
  * @brief Create a subscription to a broadcast.
