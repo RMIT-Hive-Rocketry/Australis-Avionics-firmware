@@ -201,7 +201,7 @@ typedef struct {
 
 
 typedef struct {
-  uint8_t word[2];
+  uint8_t byte[8];
   uint8_t length;
 } CAN_Data;
 

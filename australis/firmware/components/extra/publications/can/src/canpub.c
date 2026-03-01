@@ -36,7 +36,7 @@ static CAN_Queue_t* can_broadcast[CAN_LISTENERS];
 static uint8_t can_listener_count = 0;
 
 
-void CAN_Queue_Create(CAN_Queue_t* target, uint32_t id) {
+void CAN_Queue_Create(CAN_Queue_t* target, CAN_ID_t id) {
   
   // Create the queue data structure.
   target->id = id;

@@ -6,6 +6,13 @@
 #include "can.h"
 
 
+typedef enum : uint32_t {
+  CAN_ID_AB_Data  = 0x601,
+  CAN_ID_AB_Close = 0x602,
+  CAN_ID_AB_Test  = 0x603
+} CAN_ID_t;
+
+
 #define CAN_LISTENERS_MAX 8
 // How many instances of listening to CAN?
 
@@ -14,7 +21,7 @@
 #define CAN_TRANSMISSION_QUEUE_LENGTH 16
 
 typedef struct {
-  uint32_t id;
+  CAN_ID_t id;
   QueueHandle_t queue;
   uint8_t _pucQueueStorageBuffer[CAN_QUEUE_LENGTH*sizeof(CAN_Data)];
   StaticQueue_t _pxQueueBuffer;  
@@ -32,7 +39,7 @@ typedef enum {
 } Return_CAN_Queue_Create_t;
 
 Return_CAN_Queue_Create_t
-CAN_Queue_Create(CAN_Queue_t* target, uint32_t id);
+CAN_Queue_Create(CAN_Queue_t* target, CAN_ID_t id);
 
 
 extern QueueHandle_t CAN_Transmission_Queue;
