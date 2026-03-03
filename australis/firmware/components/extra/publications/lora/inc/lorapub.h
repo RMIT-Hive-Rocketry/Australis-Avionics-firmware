@@ -21,8 +21,8 @@ extern Broadcast_Queue_t BQueue_LoRa_Received;
 bool PubLora_startup(TopicHandle_t topic, void *context);
 
 
-void vLoRaTransmit(void *argument)
-void vLoRaReceive(void *argument)
-void loraPub_interrupt(void)
+void vLoRaTransmit(void *argument);
+void vLoRaReceive(void *argument);
+void loraPub_interrupt(void);
 
 #endif

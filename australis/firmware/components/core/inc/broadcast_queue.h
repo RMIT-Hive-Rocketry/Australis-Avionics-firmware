@@ -10,7 +10,7 @@
 #include <stddef.h>
 
 #include "FreeRTOS.h" // IWYU pragma: keep
-
+#include "queue.h"
 
 
 /* The Broadcast_Queue structures are made to form a circular list.
@@ -20,25 +20,24 @@
 //TODO: Static compile-time structures are preferable
 
 
+/** @brief A subscriber to a broadcast queue. The next members form a circular
+ *  list of subscribers to one broadcast.
+ */
+typedef struct Broadcast_Queue_Member {
+  QueueHandle_t queue;            //!< Queue structure.
+  struct Broadcast_Queue_Member* next; //!< Following member in circular list.
+} Broadcast_Queue_Member_t;
+
 /** @brief Provides the context of a list of subscribers.
  */
 typedef struct {
-  Broadcast_Queue_Member* head; //!< Head of circular list.
+  Broadcast_Queue_Member_t* head; //!< Head of circular list.
   size_t data_size;             //!< Data size of all lists.
   uint16_t length;              //!< Length of all lists.
 } Broadcast_Queue_t;
 
 Broadcast_Queue_t
 Broadcast_Queue_Create(size_t data_size, uint16_t length);
-
-
-/** @brief A subscriber to a broadcast queue. The next members form a circular
- *  list of subscribers to one broadcast.
- */
-typedef struct Broadcast_Queue_Member {
-  QueueHandle_t queue;            //!< Queue structure.
-  Broadcast_Queue_Member_t* next; //!< Following member in circular list.
-} Broadcast_Queue_Member_t;
 
 
 /** @brief Create a subscription to a broadcast. Requires a defined but

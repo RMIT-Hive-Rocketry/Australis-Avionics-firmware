@@ -23,8 +23,6 @@ typedef enum : uint32_t {
 typedef struct {
   CAN_ID_t id;
   QueueHandle_t queue;
-  uint8_t _pucQueueStorageBuffer[CAN_QUEUE_LENGTH*sizeof(CAN_Data)];
-  StaticQueue_t _pxQueueBuffer;  
 } CAN_Queue_t;
 //TODO: consider adding a set for concurrent read/write?
 
@@ -51,7 +49,7 @@ typedef enum {
 } Return_CAN_Transmission_Queue_Add_t;
 
 Return_CAN_Transmission_Queue_Add_t
-CAN_Transmission_Queue_Add(CAN_Packet packet);
+CAN_Transmission_Queue_Add(CAN_Packet* packet);
 
 
 void vCanTransmit(void *pvParameters);

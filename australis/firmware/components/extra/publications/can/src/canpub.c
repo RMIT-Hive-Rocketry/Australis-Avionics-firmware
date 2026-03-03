@@ -24,6 +24,7 @@
 #include "gpiopin.h"
 #include "broadcast_queue.h"
 
+#include "devices.h"
 
 static TaskHandle_t vCanTransmitHandle;
 static TaskHandle_t vCanReceiveHandle;
@@ -32,18 +33,20 @@ static TaskHandle_t vCanReceiveHandle;
 
 
 // All CAN_Queue_t types must be tracked in this array for vCanReceive
-static CAN_Queue_t* can_broadcast[CAN_LISTENERS];
+static CAN_Queue_t* can_broadcast[CAN_LISTENERS_MAX];
 static uint8_t can_listener_count = 0;
 
 
+<<<<<<< HEAD
 void CAN_Queue_Create(CAN_Queue_t* target, CAN_ID_t id) {
+=======
+Return_CAN_Queue_Create_t
+CAN_Queue_Create(CAN_Queue_t* target, uint32_t id) {
+>>>>>>> 94cc1dc (compile-time fixes when compiling AV2-dual)
   
   // Create the queue data structure.
   target->id = id;
-  target->queue = xQueueCreateStatic(CAN_QUEUE_LENGTH,
-                                     sizeof(CAN_Data),
-                                     &target->_pucQueueStorageBuffer,
-                                     &target->_pucQueueBuffer);
+  target->queue = xQueueCreate(CAN_QUEUE_LENGTH, sizeof(CAN_Data));
 
   // Did queue creation fail?
   if (target->queue == NULL) {
@@ -63,29 +66,22 @@ void CAN_Queue_Create(CAN_Queue_t* target, CAN_ID_t id) {
 
 // CAN transmission queue data structures.
 QueueHandle_t CAN_Transmission_Queue;
-static uint8_t CAN_Transmission_Queue_pucQueueStorageBuffer[CAN_TRANSMISSION_QUEUE_LENGTH*sizeof(CAN_Packet)];
-static StaticQueue_t CAN_Transmission_Queue_pxQueueBuffer;
 
-
-Return_CAN_Transmission_Queue_t
+Return_CAN_Transmission_Queue_Add_t
 CAN_Transmission_Queue_Add(CAN_Packet* packet) {
 
   // Create transmission queue on first run.
   static bool queue_init = false;
   if (!queue_init) {
-    CAN_Transmission_Queue = xQueueCreateStatic(CAN_TRANSMISSION_QUEUE_LENGTH,
-                                                sizeof(CAN_Packet),
-                                                &CAN_Transmission_Queue_pucQueueStorageBuffer,
-                                                &CAN_Transmission_Queue_pucQueueBuffer);
+    CAN_Transmission_Queue = xQueueCreate(CAN_TRANSMISSION_QUEUE_LENGTH, sizeof(CAN_Packet));
     queue_init = true;
   }
 
-
   if (xQueueSend(CAN_Transmission_Queue, packet, 0) == errQUEUE_FULL) {
-    return CAN_Transmission_Queue_Add__Error_Queue_Full;
+    return Return_CAN_Transmission_Queue_Add__Error_Queue_Full;
   }
 
-  return CAN_Transmission_Queue_Add__Success;
+  return Return_CAN_Transmission_Queue_Add__Success;
 
 }
 

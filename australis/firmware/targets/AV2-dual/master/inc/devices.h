@@ -94,4 +94,9 @@ bool initDevices();
 #define LORA_SPI_SDO          GPIO_PIN11 // SDI pin on PE11
 #define LORA_SPI_SDI          GPIO_PIN12 // SDO pin on PE12
 
+#define CAN_PORT              GPIOA
+#define CAN_AF                GPIO_AF9
+#define CAN_RXD               GPIO_PIN11
+#define CAN_TXD               GPIO_PIN12
+
 #endif
