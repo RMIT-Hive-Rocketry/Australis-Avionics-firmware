@@ -54,9 +54,9 @@ void CAN_rxCallback(void *context) {
   ctx->bus.receive(&ctx->bus, &data);
   ctx->led1.toggle(&ctx->led1);
 
-  if (data.word[0] % 4 == 0) {
-    ctx->led2.toggle(&ctx->led2);
-  }
+  // if (data.word[0] % 4 == 0) {
+  //   ctx->led2.toggle(&ctx->led2);
+  // }
 }
 
 /* =============================================================================== */

@@ -152,9 +152,9 @@ void sendGroundPacket1(uint8_t broadcastBegin) {
   const size_t packetLength = 9;
   const size_t packetSize   = 32;
 
-  LoRa_Message_t bytes;
-  bytes.length  = 1 + packetSize;
-  bytes.data[0] = packetSize;
+  LoRa_Message_t message;
+  message.length  = 1 + packetSize;
+  message.data[0] = packetSize;
 
   uint8_t stateFlags = (state->flightState << 5);
 
@@ -169,7 +169,7 @@ void sendGroundPacket1(uint8_t broadcastBegin) {
      * construction process.
      * The packet structure itself contains information on the fields,
      * the length of each, as well as the data contained. This data
-     * must be copied to a raw byte array (the bytes variable) for
+     * must be copied to a raw byte array (the message variable) for
      * transmission.
      */
     Packet packet =
@@ -223,11 +223,11 @@ void sendGroundPacket1(uint8_t broadcastBegin) {
       };
 
     // Construct byte array from packet structure
-    Packet_asBytes(&packet, &bytes.data[1], packetSize);
+    Packet_asBytes(&packet, &message.data[1], packetSize);
   }
 
   // Send packet comment to LoRa author
-  xQueueSend(Queue_LoRa_Transmit, bytes)
+  xQueueSend(Queue_LoRa_Transmit, &message, 0);
 }
 
 /* =============================================================================== */
@@ -311,7 +311,7 @@ void sendGroundPacket2(SAM_M10Q_Data *data) {
   }
 
   // Send packet comment to LoRa author
-  xQueueSend(Queue_LoRa_Transmit, message);
+  xQueueSend(Queue_LoRa_Transmit, &message, 0);
 }
 
 /** @} */

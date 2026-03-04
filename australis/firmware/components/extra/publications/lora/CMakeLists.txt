@@ -19,7 +19,7 @@ target_link_options(${MODULE_NAME} BEFORE PUBLIC
 
 target_include_directories(${MODULE_NAME}
   PUBLIC
-    inc/
+  inc/
 )
 
 add_library(${MODULE_NAME}_headers INTERFACE)

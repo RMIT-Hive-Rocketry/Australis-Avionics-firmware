@@ -22,9 +22,8 @@
 #include "can.h"
 #include "rcc.h"
 #include "gpiopin.h"
-#include "broadcast_queue.h"
-
 #include "devices.h"
+#include "broadcast_queue.h"
 
 static TaskHandle_t vCanTransmitHandle;
 static TaskHandle_t vCanReceiveHandle;
@@ -37,12 +36,8 @@ static CAN_Queue_t* can_broadcast[CAN_LISTENERS_MAX];
 static uint8_t can_listener_count = 0;
 
 
-<<<<<<< HEAD
-void CAN_Queue_Create(CAN_Queue_t* target, CAN_ID_t id) {
-=======
 Return_CAN_Queue_Create_t
-CAN_Queue_Create(CAN_Queue_t* target, uint32_t id) {
->>>>>>> 94cc1dc (compile-time fixes when compiling AV2-dual)
+CAN_Queue_Create(CAN_Queue_t* target, CAN_ID_t id) {
   
   // Create the queue data structure.
   target->id = id;
@@ -127,7 +122,7 @@ void __attribute__((constructor)) init() {
  * ============================================================================================== */
 void vCanTransmit(void *argument) {
   const TickType_t blockTime = portMAX_DELAY;
-  CAN_Data txData;
+  CAN_Packet txData;
 
   vCanTransmitHandle = xTaskGetCurrentTaskHandle();
 
@@ -205,7 +200,7 @@ void vCanReceive(void *argument) {
       for (uint8_t can_listener = 0; can_listener < can_listener_count; can_listener++) {
         if (can_broadcast[can_listener]->id == rxData.id) {
           xQueueSend(can_broadcast[can_listener]->queue,
-                     &can_broadcast[can_listener]->data, 0);
+                     &rxData.data, 0);
         }
       }
     }

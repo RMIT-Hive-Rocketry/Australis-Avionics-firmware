@@ -5,6 +5,10 @@
 #include "topic.h"
 #include "lora.h"
 #include "gpiopin.h"
+#include "queue.h"
+
+#include "broadcast_queue.h"
+#include "AustralisConfig.h"
 
 typedef struct {
   size_t length;

@@ -133,7 +133,7 @@ bool initTasks(void) {
   xTaskCreate(vLoRaReceive, "LoraRx", 256, NULL, configMAX_PRIORITIES - 5, TaskList_new());
   xTaskCreate(vShellProcess, "ShellProcess", 256, NULL, configMAX_PRIORITIES - 6, TaskList_new());
 
-  xTaskCreate(vAerobrakesSendData, "AerobrakesData", 256, NULL, config_MAX_PRIORITIES - 1, TaskList_new());
+  xTaskCreate(vAerobrakesSendData, "AerobrakesData", 256, NULL, configMAX_PRIORITIES - 1, TaskList_new());
 
   TaskHandle_t interruptTaskHandle;
   xTaskCreate(vEnableInterrupts, "interrupts", 128, NULL, tskIDLE_PRIORITY, &interruptTaskHandle);

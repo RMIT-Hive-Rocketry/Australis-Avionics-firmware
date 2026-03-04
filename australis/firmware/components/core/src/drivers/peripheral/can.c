@@ -187,8 +187,10 @@ CAN_receive(CAN_t *can, CAN_Packet *rxData) {
         : (can->interface->sFIFOMailBox[nFifo].RIR & CAN_RI0R_STID) >> CAN_RI0R_STID_Pos;
 
     // Read data out
-    rxData->data.word[CAN_DATA_INDEX_LOW]  = can->interface->sFIFOMailBox[nFifo].RDLR;
-    rxData->data.word[CAN_DATA_INDEX_HIGH] = can->interface->sFIFOMailBox[nFifo].RDHR;
+    uint32_t* can_word_lower = (uint32_t*)&rxData->data.byte[0];
+    uint32_t* can_word_upper = (uint32_t*)&rxData->data.byte[4];
+    *can_word_lower = can->interface->sFIFOMailBox[nFifo].RDLR;
+    *can_word_upper = can->interface->sFIFOMailBox[nFifo].RDHR;
 
     // Update FIFO register
     *fifo |= CAN_RF0R_RFOM0;  // Release FIFO
@@ -222,8 +224,10 @@ CAN_transmit(CAN_t *can, CAN_Packet *txData) {
   uint8_t mailbox = (can->interface->TSR & CAN_TSR_CODE_Msk) >> CAN_TSR_CODE_Pos;
 
   // Set frame data
-  can->interface->sTxMailBox[mailbox].TDHR = txData->data.word[CAN_DATA_INDEX_HIGH];
-  can->interface->sTxMailBox[mailbox].TDLR = txData->data.word[CAN_DATA_INDEX_LOW];
+  uint32_t* can_word_lower = (uint32_t*)&txData->data.byte[0];
+  uint32_t* can_word_upper = (uint32_t*)&txData->data.byte[4];
+  can->interface->sTxMailBox[mailbox].TDLR = *can_word_lower;
+  can->interface->sTxMailBox[mailbox].TDHR = *can_word_upper;
   can->interface->sTxMailBox[mailbox].TDTR = txData->data.length;
 
   // Set frame identifier

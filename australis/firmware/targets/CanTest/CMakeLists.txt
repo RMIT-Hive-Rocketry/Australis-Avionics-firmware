@@ -10,6 +10,7 @@ build_australis_variant(
   NAME ${PROJECT_NAME}
   CONFIG_DIR "config"
   EXTRA_MODULES
+    "publications/lora"
   VARIANT_SOURCES
     "src/main.c"
   VARIANT_INCLUDES

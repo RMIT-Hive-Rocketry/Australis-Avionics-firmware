@@ -19,11 +19,13 @@ target_link_options(${MODULE_NAME} BEFORE PUBLIC
 
 target_include_directories(${MODULE_NAME}
   PUBLIC
-    inc/
+  inc/
+  #TODO: fix this ugly hack that covers up error "devices.h not found" when compiling canpub target
+  ${CMAKE_SOURCE_DIR}/australis/firmware/targets/${HARDWARE_TARGET}/master/inc
 )
 
 add_library(${MODULE_NAME}_headers INTERFACE)
 target_include_directories(${MODULE_NAME}_headers
   INTERFACE
-    inc/
+  inc/
 )
