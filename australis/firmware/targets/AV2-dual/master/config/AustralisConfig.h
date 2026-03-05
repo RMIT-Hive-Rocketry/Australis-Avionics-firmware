@@ -14,6 +14,8 @@
 #define coreUSE_TRACE              0
 #define targetENABLE_CONSOLE_PRINT 1
 
+#define coreSHELL_ENABLE           1
+
 /* ===================================================================== *
  *                             FLIGHT THRESHOLDS                         *
  * ===================================================================== */

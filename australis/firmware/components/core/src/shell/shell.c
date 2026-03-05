@@ -245,4 +245,8 @@ UART_NOT_READY:
   return;
 }
 
+#else
+
+#pragma message("Note: coreSHELL_ENABLE is not 1, so shell features are disabled. This may cause linker problems when referencing shell code.")
+
 #endif
