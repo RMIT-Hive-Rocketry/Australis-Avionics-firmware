@@ -72,7 +72,7 @@ void EXTI1_IRQHandler(void *argument) {
   (void)argument;
 
   EXTI->PR |= (0x02);
-  pubLoraInterrupt();
+  loraPub_interrupt();
 }
 
 void USART1_IRQHandler(void *argument) {
@@ -110,7 +110,7 @@ void vAerobrakesSendData(void *argument) {
 
     packet.data.length  = 8;
 
-    CAN_Transmission_Queue_Add(packet);
+    CAN_Transmission_Queue_Add(&packet);
   }
 }
 

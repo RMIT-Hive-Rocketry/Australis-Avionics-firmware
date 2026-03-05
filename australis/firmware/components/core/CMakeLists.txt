@@ -56,6 +56,7 @@ target_sources(Australis-core
   PRIVATE
     # -- SOURCE ---------------------------------------------
     ${CMAKE_CURRENT_LIST_DIR}/src/AustralisCore.c
+    ${CMAKE_CURRENT_LIST_DIR}/src/broadcast_queue.c
     ${CMAKE_CURRENT_LIST_DIR}/src/devicelist.c
     ${CMAKE_CURRENT_LIST_DIR}/src/tasklist.c
     ${CMAKE_CURRENT_LIST_DIR}/src/state.c

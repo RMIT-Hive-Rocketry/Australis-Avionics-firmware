@@ -79,7 +79,8 @@ void EXTI_RegisterIRQ(InterruptHandle handle) {
   __enable_irq();
 }
 
-void EXTI1_IRQHandler(void) { EXTI1_IRQContext.callback(EXTI1_IRQContext.context); }
+// Compiling AV2-dual: multiple definition of `EXTI1_IRQHandler';
+// void EXTI1_IRQHandler(void) { EXTI1_IRQContext.callback(EXTI1_IRQContext.context); }
 void EXTI2_IRQHandler(void) { EXTI2_IRQContext.callback(EXTI2_IRQContext.context); }
 void EXTI3_IRQHandler(void) { EXTI3_IRQContext.callback(EXTI3_IRQContext.context); }
 void EXTI4_IRQHandler(void) { EXTI4_IRQContext.callback(EXTI4_IRQContext.context); }

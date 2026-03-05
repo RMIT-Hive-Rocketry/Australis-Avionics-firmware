@@ -271,11 +271,11 @@ bool initLora() {
   lora.base.startReceive((LoRa_t *)&lora);
 
   // Assign transceiver for publication
-  LoRa_setTransceiver((LoRa_t *)&lora);
+  //LoRa_setTransceiver((LoRa_t *)&lora);
 
   // Assign RF front-end toggle for publication
   rfToggle = GPIOpin_init(LORA_RF_TOGGLE_PORT, LORA_RF_TOGGLE_PIN, NULL);
-  LoRa_setRfToggle(&rfToggle);
+  loraPub_setRfToggle(&rfToggle);
 
   // @TODO: add in error checking
   return true;

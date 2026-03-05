@@ -10,7 +10,7 @@
 #include "FreeRTOS.h" // IWYU pragma: keep
 #include "queue.h"
 
-
+#include "broadcast_queue.h"
 
 
 
@@ -72,7 +72,7 @@ Broadcast_Queue_Subscribe(Broadcast_Queue_t* broadcast, Broadcast_Queue_Member_t
   }
 
   // No errors have occurred in operation.
-  return RESULT_Broadcast_Queue_Add__Success;
+  return RESULT_Broadcast_Queue_Broadcast__Success;
 
 }
 
@@ -109,7 +109,7 @@ Broadcast_Queue_Broadcast(Broadcast_Queue_t* broadcast, void* data) {
   uint16_t queue_fail = 0;
 
   // Send to head.
-  queue_result = xQueueSend(broadcast->head.queue, data, 0);
+  queue_result = xQueueSend(broadcast->head->queue, data, 0);
 
   switch(queue_result)
     {
@@ -120,7 +120,7 @@ Broadcast_Queue_Broadcast(Broadcast_Queue_t* broadcast, void* data) {
   // Send to rest of circular list.
   for (Broadcast_Queue_Member_t* member = broadcast->head->next; member != broadcast->head; member = member->next) {
 
-    xQueueSend(member.queue, data, 0);
+    xQueueSend(member->queue, data, 0);
 
     switch(queue_result)
       {

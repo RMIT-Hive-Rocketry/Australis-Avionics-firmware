@@ -28,5 +28,6 @@ bool PubLora_startup(TopicHandle_t topic, void *context);
 void vLoRaTransmit(void *argument);
 void vLoRaReceive(void *argument);
 void loraPub_interrupt(void);
+void loraPub_setRfToggle(GPIOpin_t *rfToggle_);
 
 #endif

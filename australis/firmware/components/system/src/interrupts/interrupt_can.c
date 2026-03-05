@@ -88,7 +88,8 @@ void CAN_RegisterIRQ(InterruptHandle handle) {
 
 /* CAN1 */
 void CAN1_TX_IRQHandler(void) { CAN1_TX_IRQContext.callback(CAN1_TX_IRQContext.context); }
-void CAN1_RX0_IRQHandler(void) { CAN1_RX0_IRQContext.callback(CAN1_RX0_IRQContext.context); }
+// Compiling AV2-dual: multiple definition of `CAN1_RX0_IRQHandler';
+// void CAN1_RX0_IRQHandler(void) { CAN1_RX0_IRQContext.callback(CAN1_RX0_IRQContext.context); }
 void CAN1_RX1_IRQHandler(void) { CAN1_RX1_IRQContext.callback(CAN1_RX1_IRQContext.context); }
 void CAN1_SCE_IRQHandler(void) { CAN1_SCE_IRQContext.callback(CAN1_SCE_IRQContext.context); }
 
