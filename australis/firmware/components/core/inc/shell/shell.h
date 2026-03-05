@@ -36,6 +36,11 @@ static ShellProgramHandle_t __attribute__((section(".shell_" progName), unused))
 // Max allowable characters for shell string
 #define SHELL_MSG_LENGTH 255
 
+typedef struct {
+  size_t length;
+  uint8_t data[SHELL_MSG_LENGTH];
+} Shell_Message_t;
+
 // Terminal clear screen control sequence
 #define CMD_CLEAR "\033[3J\033[H\033[2J"
 

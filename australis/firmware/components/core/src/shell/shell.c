@@ -6,7 +6,7 @@
  * @todo Add commands to buffer to allow managing shell history for frontend       *
  ***********************************************************************************/
 
-#if (coreSHELL_ENABLE == 1)
+//#if (coreSHELL_ENABLE == 1)
 
 #include "shell.h"
 
@@ -63,7 +63,9 @@ void vShellExec(void *argument) {
  *
  * =============================================================================== */
 void vShellProcess(void *argument) {
-  CREATE_MESSAGE(rxMsg, UART_MSG_LENGTH);
+
+  //CREATE_MESSAGE(rxMsg, UART_MSG_LENGTH);
+  Shell_Message_t rxMsg;
 
   rxMsg.length = 0; // Reset length first to indicate how much of the buffer is full
   uint32_t rxData;
@@ -82,7 +84,7 @@ void vShellProcess(void *argument) {
 
     // Read in received byte to circular buffer
     rxMsg.data[rxMsg.length++]  = rxData;
-    rxMsg.length               %= UART_MSG_LENGTH;
+    rxMsg.length               %= SHELL_MSG_LENGTH;
 
     // Initialise display string with last received character
     display = (char[]){rxData, '\0'};
@@ -245,8 +247,8 @@ UART_NOT_READY:
   return;
 }
 
-#else
-
-#pragma message("Note: coreSHELL_ENABLE is not 1, so shell features are disabled. This may cause linker problems when referencing shell code.")
-
-#endif
+// #else
+// 
+// #pragma message("Note: coreSHELL_ENABLE is not 1, so shell features are disabled. This may cause linker problems when referencing shell code.")
+// 
+// #endif
