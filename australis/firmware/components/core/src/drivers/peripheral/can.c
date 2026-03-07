@@ -30,6 +30,28 @@ static void _CAN_init(CAN_TypeDef *, CAN_Config *);
  **
  * =============================================================================== */
 CAN_t CAN_init(CAN_TypeDef *interface, CAN_Config *config) {
+
+  //TODO: Not using devices.h values when we should be. GPIOA, GPIO_PIN1X, GPIO_AF9
+  // There are include problems related to CMake configuration that need to be
+  // fixed later.
+  static bool flag_gpio_setup = false;
+  if (!flag_gpio_setup) {
+
+    GPIO_Config rx_cfg = GPIO_CONFIG_DEFAULT;
+    rx_cfg.mode        = GPIO_MODE_AF;
+    rx_cfg.afr         = GPIO_AF9;
+    // Pull-up for default recessive bus.
+    rx_cfg.pupd        = GPIO_PUPD_PULLUP;
+
+    GPIO_Config tx_cfg = GPIO_CONFIG_DEFAULT;
+    tx_cfg.mode        = GPIO_MODE_AF;
+    tx_cfg.afr         = GPIO_AF9;
+
+    GPIOpin_t rxd   = GPIOpin_init(GPIOA, GPIO_PIN11, &rx_cfg);
+    GPIOpin_t txd   = GPIOpin_init(GPIOA, GPIO_PIN12, &tx_cfg);
+
+  }
+
   // Early return error struct if peripheral is NULL
   if (interface == NULL) {
     return (CAN_t){.interface = NULL};

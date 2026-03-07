@@ -80,13 +80,6 @@ int main() {
   led1            = GPIOpin_init(LED1_PORT, LED1_PIN, NULL);
   led2            = GPIOpin_init(LED2_PORT, LED2_PIN, NULL);
 
-  GPIO_Config cfg = GPIO_CONFIG_DEFAULT;
-  cfg.mode        = GPIO_MODE_AF;
-  cfg.afr         = CAN_AF;
-
-  GPIOpin_t txd   = GPIOpin_init(CAN_PORT, CAN_TXD, &cfg);
-  GPIOpin_t rxd   = GPIOpin_init(CAN_PORT, CAN_RXD, &cfg);
-
   bus             = CAN_init(CAN1, NULL);
 
   ctx.bus         = bus;

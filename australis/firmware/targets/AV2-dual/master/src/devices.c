@@ -23,6 +23,8 @@
 #include "sx1272.h"
 #include "w25q128.h"
 
+#include "can.h"
+
 #include "lorapub.h"
 
 static DeviceHandle_t deviceList[DEVICE_MAX_KEYS];
@@ -41,6 +43,9 @@ static bool initUart();
  * ============================================================================================== */
 bool initDevices() {
   DeviceList_init(deviceList);
+
+  // Start CAN bus.
+  CAN_init(CAN1, NULL);
 
   // SPI peripherals and devices
   initSensors();

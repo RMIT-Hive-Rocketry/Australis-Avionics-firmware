@@ -91,29 +91,6 @@ void CAN_setPeripheral(CAN_t *peripheral_) {
   peripheral = peripheral_;
 }
 
-void __attribute__((constructor)) init() {
-  RCC_START_PERIPHERAL(APB1, CAN1);
-
-  GPIO_Config rx_cfg = GPIO_CONFIG_DEFAULT;
-  rx_cfg.mode        = GPIO_MODE_AF;
-  rx_cfg.afr         = CAN_AF;
-  rx_cfg.pupd        = GPIO_PUPD_PULLUP; // Pull-up for default recessive bus.
-
-  GPIO_Config tx_cfg = GPIO_CONFIG_DEFAULT;
-  tx_cfg.mode        = GPIO_MODE_AF;
-  tx_cfg.afr         = CAN_AF;
-
-  GPIOpin_t rxd   = GPIOpin_init(CAN_PORT, CAN_RXD, &rx_cfg);
-  GPIOpin_t txd   = GPIOpin_init(CAN_PORT, CAN_TXD, &tx_cfg);
-
-  // CANGPIO_config();
-  // CAN_Peripheral_config();
-
-  static CAN_t c;
-  c = CAN_init(CAN1, NULL);
-  peripheral = &c;
-}
-
 /* ============================================================================================== */
 /**
  * @brief UART transmit task.
