@@ -39,6 +39,8 @@ typedef struct {
 Broadcast_Queue_t
 Broadcast_Queue_Create(size_t data_size, uint16_t length);
 
+Broadcast_Queue_Member_t
+Broadcast_Queue_Member_Create();
 
 /** @brief Create a subscription to a broadcast. Requires a defined but
  *  uninitialized Broadcast_Queue_Member_t variable.

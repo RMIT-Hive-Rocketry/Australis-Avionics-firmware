@@ -17,10 +17,22 @@
 Broadcast_Queue_t
 Broadcast_Queue_Create(size_t data_size, uint16_t length) {
   Broadcast_Queue_t bqueue;
+  bqueue.head      = NULL;
   bqueue.data_size = data_size;
   bqueue.length    = length;
   return bqueue;
 }
+
+
+// RAM is not initialized to NULL value.
+Broadcast_Queue_Member_t
+Broadcast_Queue_Member_Create() {
+  Broadcast_Queue_Member_t bqueue_member;
+  bqueue_member.queue = NULL;
+  bqueue_member.next  = NULL;
+  return bqueue_member;
+}
+
 
 /* ============================================================================================== */
 /**
@@ -34,7 +46,6 @@ RESULT_Broadcast_Queue_Subscribe
 Broadcast_Queue_Subscribe(Broadcast_Queue_t* broadcast, Broadcast_Queue_Member_t* subscriber) {
 
   // Terminate if the subscriber is already subscribed to some broadcast.
-  //TODO: Double check that STM32F439ZI inits RAM to zero.
   if (subscriber->queue != NULL) {
     return RESULT_Broadcast_Queue_Subscribe__Member_Subscribed_To_Other;
   }
@@ -42,6 +53,13 @@ Broadcast_Queue_Subscribe(Broadcast_Queue_t* broadcast, Broadcast_Queue_Member_t
   // If broadcast doesn't yet point to a subscriber, then assign it.
   if (broadcast->head == NULL) {
     broadcast->head = subscriber;
+    subscriber->next = subscriber;
+
+    // Initialize the queue structure.
+    subscriber->queue = xQueueCreate(broadcast->length, broadcast->data_size);
+    if (subscriber->queue == NULL) {
+      return RESULT_Broadcast_Queue_Subscribe__xCreateQueue_Failed;
+    }
   }
   else {
 
@@ -100,27 +118,18 @@ Broadcast_Queue_Broadcast(Broadcast_Queue_t* broadcast, void* data) {
   }
 
 
+  RESULT_Broadcast_Queue_Broadcast_t return_state = RESULT_Broadcast_Queue_Broadcast__Success;
+
   // Perform broadcast.
 
-  RESULT_Broadcast_Queue_Broadcast_t return_state = RESULT_Broadcast_Queue_Broadcast__Success;
   BaseType_t queue_result;
-
   uint16_t queue_pass = 0;
   uint16_t queue_fail = 0;
+  Broadcast_Queue_Member_t* member = broadcast->head;
 
-  // Send to head.
-  queue_result = xQueueSend(broadcast->head->queue, data, 0);
+  do {
 
-  switch(queue_result)
-    {
-    case pdPASS:        queue_pass++; break;
-    case errQUEUE_FULL: queue_fail++; break;
-    }
-
-  // Send to rest of circular list.
-  for (Broadcast_Queue_Member_t* member = broadcast->head->next; member != broadcast->head; member = member->next) {
-
-    xQueueSend(member->queue, data, 0);
+    queue_result = xQueueSend(member->queue, data, 0);
 
     switch(queue_result)
       {
@@ -128,7 +137,11 @@ Broadcast_Queue_Broadcast(Broadcast_Queue_t* broadcast, void* data) {
       case errQUEUE_FULL: queue_fail++; break;
       }
 
-  }
+    // Move to the next member.
+    member = member->next;
+
+  } while (member != broadcast->head);
+
 
   // Return the success rate of filling the queues.
 
