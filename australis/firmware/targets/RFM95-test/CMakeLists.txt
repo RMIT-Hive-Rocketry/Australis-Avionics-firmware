@@ -11,6 +11,7 @@ build_australis_variant(
   CONFIG_DIR "config"
   EXTRA_MODULES
     "drivers/lora/rfm95"
+    "drivers/lora/sx1272"
   VARIANT_SOURCES
     "src/main.c"
   VARIANT_INCLUDES

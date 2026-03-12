@@ -4,8 +4,8 @@
  */
 
 // ALLOW FORMATTING
-#ifndef _LORA_H
-#define _LORA_H
+#ifndef _SX1272_H
+#define _SX1272_H
 
 #include "lora.h"
 

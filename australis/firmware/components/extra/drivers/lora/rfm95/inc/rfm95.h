@@ -4,8 +4,8 @@
  */
 
 // ALLOW FORMATTING
-#ifndef _LORA_H
-#define _LORA_H
+#ifndef _RFM95_H
+#define _RFM95_H
 
 #include "lora.h"
 
