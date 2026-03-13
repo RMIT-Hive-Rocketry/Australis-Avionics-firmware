@@ -24,6 +24,7 @@
 #include "w25q128.h"
 
 #include "can.h"
+#include "canpub.h"
 
 #include "lorapub.h"
 
@@ -45,12 +46,13 @@ bool initDevices() {
   DeviceList_init(deviceList);
 
   // Start CAN bus.
-  CAN_init(CAN1, NULL);
+  CAN_setPeripheral(CAN_init(CAN1, NULL));
 
   // SPI peripherals and devices
   initSensors();
   initFlash();
   initLora();
+  PubLora_startup(0,0);
 
   // UART peripherals and devices
   initUart();

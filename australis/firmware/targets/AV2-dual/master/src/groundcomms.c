@@ -31,6 +31,8 @@
 
 #include "lorapub.h"
 
+#include "broadcast_queue.h"
+
 static void sendGroundPacket1(uint8_t broadcastBegin);
 static void sendGroundPacket2(SAM_M10Q_Data *data);
 
@@ -46,7 +48,7 @@ void vGroundCommStateMachine(void *argument) {
   const TickType_t xFrequency = pdMS_TO_TICKS(250);
 
   // Create subscription to LoRa topic
-  Broadcast_Queue_Member_t subscription;
+  Broadcast_Queue_Member_t subscription = Broadcast_Queue_Member_Create();
   Broadcast_Queue_Subscribe(&BQueue_LoRa_Received, &subscription);
 
   // Binary array to store LoRa topic articles

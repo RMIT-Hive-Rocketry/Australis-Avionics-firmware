@@ -87,8 +87,9 @@ CAN_Transmission_Queue_Add(CAN_Packet* packet) {
 // Add deviceReady flag to driver API to indicate
 // when a device struct is initialised and populated
 static CAN_t *peripheral;
-void CAN_setPeripheral(CAN_t *peripheral_) {
-  peripheral = peripheral_;
+void CAN_setPeripheral(CAN_t peripheral_) {
+  CAN_t storage = peripheral_;
+  peripheral = &storage;
 }
 
 /* ============================================================================================== */
@@ -118,7 +119,7 @@ void vCanTransmit(void *argument) {
       xQueuePeek(CAN_Transmission_Queue, &txData, 0);
 
       // Perform transmission
-      Return_CAN_transmit_t Return_CAN_transmit = CAN_transmit(peripheral, &txData);
+      Return_CAN_transmit_t Return_CAN_transmit = peripheral->transmit(peripheral, &txData);
 
       
       if (Return_CAN_transmit == Return_CAN_transmit__Success) {
@@ -165,7 +166,7 @@ void vCanReceive(void *argument) {
 
 
     Return_CAN_receive_t Return_CAN_receive;
-    Return_CAN_receive = CAN_receive(peripheral, &rxData);
+    Return_CAN_receive = peripheral->receive(peripheral, &rxData);
     
     if (Return_CAN_receive == Return_CAN_receive__Message_Received) {
 

@@ -19,6 +19,10 @@
 #include "statelogic.h"
 #include "state.h"
 
+
+#include "can.h"
+#include "canpub.h"
+
 void vHeartbeatBlink(void *argument) {
   (void)argument;
 
@@ -85,33 +89,40 @@ void USART1_IRQHandler(void *argument) {
 void vAerobrakesSendData(void *argument) {
 
   const TickType_t xFrequency = pdMS_TO_TICKS(20); // 50Hz
-  State *state = State_getState();
 
-  // Send CAN packets to the aerobrakes.
-  // In the aerobrakes firmware, data is cast to an integer to be used for
-  // a lookup table that controls the aerobrakes servo. For greater precision,
-  // the values are multiplied by ten before being sent.
-  switch (state->flightState) {
-  case LAUNCH:
-  case COAST:
-  case APOGEE:
-  case DESCENT:
-    CAN_Packet packet;
-    packet.id = CAN_ID_AB_Data;
+  while (1)
+    {
+      State *state = State_getState();
 
-    // Fill data
-    uint16_t* can_altitude   = (uint16_t*)&packet.data.byte[0];
-    uint16_t* can_velocity   = (uint16_t*)&packet.data.byte[2];
-    _Float32* can_tilt_angle = (_Float32*)&packet.data.byte[4];
+      // Send CAN packets to the aerobrakes.
+      // In the aerobrakes firmware, data is cast to an integer to be used for
+      // a lookup table that controls the aerobrakes servo. For greater precision,
+      // the values are multiplied by ten before being sent.
+      switch (state->flightState) {
+      case LAUNCH:
+      case COAST:
+      case APOGEE:
+      case DESCENT:
+        CAN_Packet packet;
+        packet.id = CAN_ID_AB_Data;
 
-    *can_altitude   = (uint16_t)(10.0 * state->altitude);
-    *can_velocity   = (uint16_t)(10.0 * state->velocity);
-    *can_tilt_angle = state->tilt;
+        // Fill data
+        uint16_t* can_altitude   = (uint16_t*)&packet.data.byte[0];
+        uint16_t* can_velocity   = (uint16_t*)&packet.data.byte[2];
+        _Float32* can_tilt_angle = (_Float32*)&packet.data.byte[4];
 
-    packet.data.length  = 8;
+        *can_altitude   = (uint16_t)(10.0 * state->altitude);
+        *can_velocity   = (uint16_t)(10.0 * state->velocity);
+        *can_tilt_angle = state->tilt;
 
-    CAN_Transmission_Queue_Add(&packet);
-  }
+        packet.data.length  = 8;
+
+        CAN_Transmission_Queue_Add(&packet);
+      }
+
+      vTaskDelay(xFrequency);
+    }
+
 }
 
 

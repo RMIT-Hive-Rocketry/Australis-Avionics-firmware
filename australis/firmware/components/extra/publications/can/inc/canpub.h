@@ -54,7 +54,7 @@ CAN_Transmission_Queue_Add(CAN_Packet* packet);
 
 void vCanTransmit(void *pvParameters);
 void vCanReceive(void *pvParameters);
-void CAN_setPeripheral(CAN_t *peripheral);
+void CAN_setPeripheral(CAN_t peripheral);
 void pubCanInterrupt();
 
 #endif
