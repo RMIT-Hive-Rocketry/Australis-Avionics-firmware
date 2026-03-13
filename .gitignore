@@ -16,6 +16,7 @@
 **/difflog*
 **/diffsummary*
 documentation/docs/html
+output/
 
 # Ignore output from CMake
 CMakeCache.txt
