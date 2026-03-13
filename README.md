@@ -95,6 +95,8 @@ This repository provides a containerised development environment to simplify the
    make
    ```
 
+5. Each target directory should contain a file called `flash.jlink`. This is for use with a program called *JLink Commander*, identified as either `JLinkExe` or `JLink.exe` depending on your platform, in a software package distributed by [SEGGER](https://www.segger.com/downloads/jlink/). You can use the flash script by calling your JLink Commander program with the arguments `-CommandFile /path/to/flash.jlink`.
+
 #### Common Issues
 
 > The `/src` directory inside the container is empty/unavailable
