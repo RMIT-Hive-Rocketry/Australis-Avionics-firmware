@@ -34,6 +34,8 @@ Broadcast_Queue_Member_Create() {
 }
 
 
+#define MEM_SET(x) ( !((x == NULL) || (x == 0xa5a5a5a5)) )
+
 /* ============================================================================================== */
 /**
  * @brief Create a subscription to a broadcast.
@@ -46,18 +48,18 @@ RESULT_Broadcast_Queue_Subscribe
 Broadcast_Queue_Subscribe(Broadcast_Queue_t* broadcast, Broadcast_Queue_Member_t* subscriber) {
 
   // Terminate if the subscriber is already subscribed to some broadcast.
-  if (subscriber->queue != NULL) {
+  if (MEM_SET(subscriber->queue)) {
     return RESULT_Broadcast_Queue_Subscribe__Member_Subscribed_To_Other;
   }
 
   // If broadcast doesn't yet point to a subscriber, then assign it.
-  if (broadcast->head == NULL) {
+  if (!MEM_SET(broadcast->head)) {
     broadcast->head = subscriber;
     subscriber->next = subscriber;
 
     // Initialize the queue structure.
     subscriber->queue = xQueueCreate(broadcast->length, broadcast->data_size);
-    if (subscriber->queue == NULL) {
+    if (!MEM_SET(subscriber->queue)) {
       return RESULT_Broadcast_Queue_Subscribe__xCreateQueue_Failed;
     }
   }
@@ -78,7 +80,7 @@ Broadcast_Queue_Subscribe(Broadcast_Queue_t* broadcast, Broadcast_Queue_Member_t
 
     // Initialize the queue structure.
     subscriber->queue = xQueueCreate(broadcast->length, broadcast->data_size);
-    if (subscriber->queue == NULL) {
+    if (!MEM_SET(subscriber->queue)) {
       return RESULT_Broadcast_Queue_Subscribe__xCreateQueue_Failed;
     }
 
@@ -108,12 +110,12 @@ RESULT_Broadcast_Queue_Broadcast_t
 Broadcast_Queue_Broadcast(Broadcast_Queue_t* broadcast, void* data) {
 
   // Check broadcast is initialized.
-  if (broadcast == NULL) {
+  if (!MEM_SET(broadcast)) {
     return RESULT_Broadcast_Queue_Broadcast__Broadcast_Null;
   }
 
   // Check if there are subscribers.
-  if (broadcast->head == NULL) {
+  if (!MEM_SET(broadcast->head)) {
     return RESULT_Broadcast_Queue_Broadcast__Subscribers_None;
   }
 

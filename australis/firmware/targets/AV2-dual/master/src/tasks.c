@@ -19,7 +19,6 @@
 #include "statelogic.h"
 #include "state.h"
 
-
 #include "can.h"
 #include "canpub.h"
 
@@ -59,17 +58,22 @@ void vEnableInterrupts(void *argument) {
   __disable_irq();
   NVIC_SetPriority(EXTI1_IRQn, 9);
   NVIC_EnableIRQ(EXTI1_IRQn);
-  NVIC_SetPriority(USART1_IRQn, 10);
-  NVIC_EnableIRQ(USART1_IRQn);
-  NVIC_SetPriority(USART3_IRQn, 11);
-  NVIC_EnableIRQ(USART3_IRQn);
+  //NVIC_SetPriority(USART1_IRQn, 10);
+  //NVIC_EnableIRQ(USART1_IRQn);
+  //NVIC_SetPriority(USART3_IRQn, 11);
+  //NVIC_EnableIRQ(USART3_IRQn);
   EXTI->RTSR        |= 0x02;
   EXTI->IMR         |= 0x02;
   SYSCFG->EXTICR[0] &= ~0xF0;
   SYSCFG->EXTICR[0]  = 0x30;
   __enable_irq();
 
+  // Task deletion is causing exit to WWDG.
   vTaskDelete(NULL);
+  //vTaskSuspend(0);
+  // for (;;) {
+  //   ;
+  // }
 }
 
 void EXTI1_IRQHandler(void *argument) {

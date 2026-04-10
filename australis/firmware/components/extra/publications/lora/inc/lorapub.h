@@ -30,4 +30,8 @@ void vLoRaReceive(void *argument);
 void loraPub_interrupt(void);
 void loraPub_setRfToggle(GPIOpin_t *rfToggle_);
 
+
+void loraPub_setTransceiver(LoRa_t *transceiver_);
+LoRa_t *loraPub_getTransceiver();
+
 #endif

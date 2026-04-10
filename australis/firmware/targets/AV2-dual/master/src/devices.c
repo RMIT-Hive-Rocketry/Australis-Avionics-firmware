@@ -274,10 +274,11 @@ bool initLora() {
     NULL
   );
   deviceList[DEVICE_LORA].deviceName = "LoRa";
-  deviceList[DEVICE_LORA].device     = &lora;
-  lora.base.startReceive((LoRa_t *)&lora);
+  deviceList[DEVICE_LORA].device     = &lora.base;
+  lora.base.startReceive((LoRa_t *)&lora.base);
 
   // Assign transceiver for publication
+  loraPub_setTransceiver((LoRa_t *)&lora.base);
   //LoRa_setTransceiver((LoRa_t *)&lora);
 
   // Assign RF front-end toggle for publication

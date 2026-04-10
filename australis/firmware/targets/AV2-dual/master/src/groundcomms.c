@@ -48,7 +48,8 @@ void vGroundCommStateMachine(void *argument) {
   const TickType_t xFrequency = pdMS_TO_TICKS(250);
 
   // Create subscription to LoRa topic
-  Broadcast_Queue_Member_t subscription = Broadcast_Queue_Member_Create();
+  static Broadcast_Queue_Member_t subscription;
+  subscription = Broadcast_Queue_Member_Create();
   Broadcast_Queue_Subscribe(&BQueue_LoRa_Received, &subscription);
 
   // Binary array to store LoRa topic articles
@@ -225,11 +226,11 @@ void sendGroundPacket1(uint8_t broadcastBegin) {
       };
 
     // Construct byte array from packet structure
-    Packet_asBytes(&packet, &message.data[1], packetSize);
+    Packet_asBytes(&packet, &message.data[0], packetSize);
   }
 
   // Send packet comment to LoRa author
-  xQueueSend(Queue_LoRa_Transmit, &message, 0);
+  xQueueSend(Queue_LoRa_Transmit, &message.data, 0);
 }
 
 /* =============================================================================== */
@@ -309,11 +310,11 @@ void sendGroundPacket2(SAM_M10Q_Data *data) {
       };
 
     // Construct byte array from packet structure
-    Packet_asBytes(&packet, message.data, message.length);
+    Packet_asBytes(&packet, &message.data[0], message.length);
   }
 
   // Send packet comment to LoRa author
-  xQueueSend(Queue_LoRa_Transmit, &message, 0);
+  xQueueSend(Queue_LoRa_Transmit, &message.data, 0);
 }
 
 /** @} */
