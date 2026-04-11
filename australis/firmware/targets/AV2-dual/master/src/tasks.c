@@ -149,7 +149,8 @@ bool initTasks(void) {
   xTaskCreate(vShellProcess, "ShellProcess", 256, NULL, configMAX_PRIORITIES - 6, TaskList_new());
 
   xTaskCreate(vAerobrakesSendData, "AerobrakesData", 256, NULL, configMAX_PRIORITIES - 1, TaskList_new());
-
+  xTaskCreate(vCanTransmit, "CAN Transmit", 256, NULL, configMAX_PRIORITIES - 1, TaskList_new());
+  
   TaskHandle_t interruptTaskHandle;
   xTaskCreate(vEnableInterrupts, "interrupts", 128, NULL, tskIDLE_PRIORITY, &interruptTaskHandle);
   return true;

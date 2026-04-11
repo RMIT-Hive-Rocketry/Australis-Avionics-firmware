@@ -88,7 +88,8 @@ CAN_Transmission_Queue_Add(CAN_Packet* packet) {
 // when a device struct is initialised and populated
 static CAN_t *peripheral;
 void CAN_setPeripheral(CAN_t peripheral_) {
-  CAN_t storage = peripheral_;
+  static CAN_t storage;
+  storage = peripheral_;
   peripheral = &storage;
 }
 
@@ -101,15 +102,18 @@ void CAN_setPeripheral(CAN_t peripheral_) {
 void vCanTransmit(void *argument) {
   const TickType_t blockTime = portMAX_DELAY;
   CAN_Packet txData;
-
+  
   vCanTransmitHandle = xTaskGetCurrentTaskHandle();
 
   for (;;) {
     // Don't operate unless transceiver is ready
     if (peripheral == NULL) {
-      continue;
+      goto vCanTransmit_END;
     }
 
+    if (CAN_Transmission_Queue == NULL) {
+      goto vCanTransmit_END;
+    }
 
     // Loop through messages waiting in the mailbox.
     while (uxQueueMessagesWaiting(CAN_Transmission_Queue) > 0) {
@@ -132,7 +136,8 @@ void vCanTransmit(void *argument) {
       }
       
     }
-    
+
+  vCanTransmit_END:
     TickType_t xLastWakeTime = xTaskGetTickCount();
     vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(150));
 
