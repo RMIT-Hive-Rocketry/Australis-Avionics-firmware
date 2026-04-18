@@ -78,7 +78,7 @@
 
 #define RFM95_CONFIG_DEFAULT         \
   (RFM95_Config) {                   \
-    .freq             = 915.0f,     \
+    .freq             = 433.0f,     \
     .bw               = RFM95_BW500, \
     .sf               = RFM95_SF9,   \
     .cr               = RFM95_CR5,   \

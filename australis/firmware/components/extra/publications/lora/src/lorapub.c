@@ -96,79 +96,6 @@ void PubLora_handleInterrupt(InterruptContext *interruptContext) {
   portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
-/* =============================================================================== */
-/**
- * @brief
- *
- **
- * =============================================================================== */
-// static bool PubLora_handleComment(TopicHandle_t topic, void *data, size_t size) {
-// 
-//   PubLora_Context *ctx = topic->context;
-// 
-//   // Context must not point to NULL...
-//   ASSERT(ctx);
-// 
-//   LoRa_t *transceiver  = ctx->transceiver;
-//   GPIOpin_t *rfToggle  = ctx->rfToggle;
-//   volatile bool *ready = ctx->ready;
-// 
-//   // Transceiver handle must not be NULL...
-//   ASSERT(transceiver);
-//   ASSERT(ready);
-// 
-//   if (ctx->rfToggle) {
-//     // Toggle RF front-end for transmit
-//     rfToggle->reset(rfToggle);
-//   }
-// 
-//   transceiver->transmit(transceiver, data, size);
-// 
-//   while (!*ready);
-// 
-//   if (rfToggle) {
-//     // Toggle RF front-end for receive
-//     rfToggle->set(rfToggle);
-//   }
-// 
-//   // Continue receiving
-//   transceiver->startReceive(transceiver);
-//   return false;
-// }
-
-/* =============================================================================== */
-/**
- * @brief
- *
- **
- * =============================================================================== */
-// static bool PubLora_acquireData(TopicHandle_t topic) {
-// 
-//   PubLora_Context *ctx = topic->context;
-// 
-//   // Context must not point to NULL...
-//   ASSERT(ctx);
-// 
-//   LoRa_t *transceiver  = ctx->transceiver;
-//   volatile bool *ready = ctx->ready;
-// 
-//   // Transceiver handle must not be NULL...
-//   ASSERT(transceiver);
-//   ASSERT(ready);
-// 
-//   // TODO:
-//   // Need to add method to transceiver to read number of bytes waiting in next packet.
-//   // This function will be called by the message acquisition task, so we can use its stack
-//   // to receive the packet and then send the data to dispatch.
-//   //
-//   // Read received packet from transceiver
-//   // rxData.length = transceiver->readReceive(transceiver, rxData.data, LORA_MSG_LENGTH);
-// 
-//   // TODO: Send data to dispatch (i.e. call queueArticle() with received data)
-// 
-//   return false;
-// }
-
 
 // LoRa transceiver device
 //
@@ -206,6 +133,8 @@ void vLoRaTransmit(void *argument) {
   LoRa_Message_t txData;
 
   for (;;) {
+    TickType_t xLastWakeTime = xTaskGetTickCount();
+
     // Don't operate unless transceiver is ready
     if (transceiver == NULL)
       continue;
@@ -233,6 +162,9 @@ void vLoRaTransmit(void *argument) {
       // Continue receiving
       transceiver->startReceive(transceiver);
     }
+    else {
+      vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(20));
+    }
   }
 }
 
@@ -256,6 +188,8 @@ void vLoRaReceive(void *argument) {
   LoRa_Message_t rxData;
 
   for (;;) {
+    TickType_t xLastWakeTime = xTaskGetTickCount();
+    
     // Don't operate unless transceiver is ready
     if (transceiver == NULL)
       continue;
@@ -269,6 +203,8 @@ void vLoRaReceive(void *argument) {
     // Publish packet data to topic
     if (rxData.length > 0) {
       Broadcast_Queue_Broadcast(&BQueue_LoRa_Received, &rxData.data);
+    } else {
+      vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(20));
     }
   }
 }

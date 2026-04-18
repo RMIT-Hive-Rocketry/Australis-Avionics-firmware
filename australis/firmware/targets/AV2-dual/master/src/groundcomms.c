@@ -38,9 +38,9 @@ static void sendGroundPacket2(SAM_M10Q_Data *data);
 
 /* =============================================================================== */
 /**
- * @brief AV to ground communications state machine.
+ * @brief Determine what the state the rocket is in. Send telemetry to the Ground
+ *  Control station.
  *
- **
  * =============================================================================== */
 void vGroundCommStateMachine(void *argument) {
   (void)argument;
@@ -226,11 +226,11 @@ void sendGroundPacket1(uint8_t broadcastBegin) {
       };
 
     // Construct byte array from packet structure
-    Packet_asBytes(&packet, &message.data[0], packetSize);
+    Packet_asBytes(&packet, &message.data[1], packetSize);
   }
 
   // Send packet comment to LoRa author
-  xQueueSend(Queue_LoRa_Transmit, &message.data, 0);
+  xQueueSend(Queue_LoRa_Transmit, &message, 0);
 }
 
 /* =============================================================================== */
@@ -310,11 +310,11 @@ void sendGroundPacket2(SAM_M10Q_Data *data) {
       };
 
     // Construct byte array from packet structure
-    Packet_asBytes(&packet, &message.data[0], message.length);
+    Packet_asBytes(&packet, &message.data[1], message.length);
   }
 
   // Send packet comment to LoRa author
-  xQueueSend(Queue_LoRa_Transmit, &message.data, 0);
+  xQueueSend(Queue_LoRa_Transmit, &message, 0);
 }
 
 /** @} */

@@ -2,7 +2,7 @@
 #ifndef AUSTRALISCONFIG_H
 #define AUSTRALISCONFIG_H
 
-#define LORA_MSG_LENGTH            255
+#define LORA_MSG_LENGTH             34
 #define UART_MSG_LENGTH            255
 
 #define coreMAX_SUBSCRIBERS        255

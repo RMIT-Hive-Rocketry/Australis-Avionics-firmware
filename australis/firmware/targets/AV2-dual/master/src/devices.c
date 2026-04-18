@@ -266,6 +266,7 @@ bool initLora() {
   GPIOpin_t loraCS = GPIOpin_init(LORA_CS, NULL);
   static GPIOpin_t rfToggle;
 
+  #ifdef FREQ_915
   static SX1272_t lora;
   SX1272_init(
     &lora,
@@ -273,6 +274,18 @@ bool initLora() {
     loraCS,
     NULL
   );
+  #elif FREQ_433
+  static RFM95_t lora;
+  RFM95_init(
+    &lora,
+    &spiLora,
+    loraCS,
+    NULL
+  );
+  #else
+  #error "Must define compile macro FREQ_915 or FREQ_433 to select 
+  #endif
+  
   deviceList[DEVICE_LORA].deviceName = "LoRa";
   deviceList[DEVICE_LORA].device     = &lora.base;
   lora.base.startReceive((LoRa_t *)&lora.base);
