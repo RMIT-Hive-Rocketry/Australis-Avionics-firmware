@@ -120,7 +120,7 @@ void vCanTransmit(void *argument) {
 
       // Peek next packet, don't receive because we're not sure if transmission
       // will succeed.
-      xQueuePeek(CAN_Transmission_Queue, &txData, 0);
+      xQueueReceive(CAN_Transmission_Queue, &txData, 0);
 
       // Perform transmission
       Return_CAN_transmit_t Return_CAN_transmit = peripheral->transmit(peripheral, &txData);
@@ -128,7 +128,7 @@ void vCanTransmit(void *argument) {
       
       if (Return_CAN_transmit == Return_CAN_transmit__Success) {
         // If transmission succeeds, flush packet out of queue.
-        xQueueReceive(CAN_Transmission_Queue, &txData, 0);
+        //xQueueReceive(CAN_Transmission_Queue, &txData, 0);
       } else if (Return_CAN_transmit == Return_CAN_transmit__Mailbox_Full) {
         break;
       } else {

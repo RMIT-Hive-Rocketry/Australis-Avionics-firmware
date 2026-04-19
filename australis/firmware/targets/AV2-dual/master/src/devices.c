@@ -283,7 +283,7 @@ bool initLora() {
     NULL
   );
   #else
-  #error "Must define compile macro FREQ_915 or FREQ_433 to select 
+  #error "Must define compile macro FREQ_915 or FREQ_433."
   #endif
   
   deviceList[DEVICE_LORA].deviceName = "LoRa";

@@ -226,7 +226,7 @@ void sendGroundPacket1(uint8_t broadcastBegin) {
       };
 
     // Construct byte array from packet structure
-    Packet_asBytes(&packet, &message.data[1], packetSize);
+    Packet_asBytes(&packet, &message.data[0], packetSize);
   }
 
   // Send packet comment to LoRa author
@@ -310,7 +310,7 @@ void sendGroundPacket2(SAM_M10Q_Data *data) {
       };
 
     // Construct byte array from packet structure
-    Packet_asBytes(&packet, &message.data[1], message.length);
+    Packet_asBytes(&packet, &message.data[0], message.length);
   }
 
   // Send packet comment to LoRa author
