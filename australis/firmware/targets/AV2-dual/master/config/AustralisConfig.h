@@ -2,7 +2,7 @@
 #ifndef AUSTRALISCONFIG_H
 #define AUSTRALISCONFIG_H
 
-#define LORA_MSG_LENGTH             34
+#define LORA_MSG_LENGTH             42
 #define UART_MSG_LENGTH            255
 
 #define coreMAX_SUBSCRIBERS        255
@@ -21,7 +21,7 @@
  * ===================================================================== */
 
 #define MAIN_ALTITUDE_METERS       390.0f
-#define ACCEL_LAUNCH               3.0f
+#define ACCEL_LAUNCH               19.61f
 
 /* ===================================================================== *
  *                                DEVICE AXES                            *
@@ -47,6 +47,6 @@
 #define ACCEL_SCALE_LOW            16
 
 #define FREQ_915
-// #define FREQ_433
+//#define FREQ_433
 
 #endif

@@ -20,8 +20,15 @@
 #include "bmp581.h"
 #include "kx134_1211.h"
 #include "sam_m10q.h"
-#include "sx1272.h"
 #include "w25q128.h"
+
+#if defined(FREQ_915)
+#include "sx1272.h"
+#elif defined(FREQ_433)
+#include "rfm95.h"
+#else
+#error "Must define compile macro FREQ_915 or FREQ_433."
+#endif
 
 #include "can.h"
 #include "canpub.h"
@@ -266,7 +273,7 @@ bool initLora() {
   GPIOpin_t loraCS = GPIOpin_init(LORA_CS, NULL);
   static GPIOpin_t rfToggle;
 
-  #ifdef FREQ_915
+  #if defined(FREQ_915)
   static SX1272_t lora;
   SX1272_init(
     &lora,
@@ -274,7 +281,7 @@ bool initLora() {
     loraCS,
     NULL
   );
-  #elif FREQ_433
+  #elif defined(FREQ_433)
   static RFM95_t lora;
   RFM95_init(
     &lora,

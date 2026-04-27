@@ -15,6 +15,7 @@ build_australis_variant(
     "drivers/sensors/baro/bmp581"
     "drivers/flash/w25q128"
     "drivers/lora/sx1272"
+    "drivers/lora/rfm95"
     "drivers/gps/sam_m10q"
     "publications/lora"
     "publications/can"

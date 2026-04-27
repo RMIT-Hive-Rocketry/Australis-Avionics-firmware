@@ -22,6 +22,8 @@
 #include "can.h"
 #include "canpub.h"
 
+#include "flashwrite.h"
+
 void vHeartbeatBlink(void *argument) {
   (void)argument;
 
@@ -153,5 +155,8 @@ bool initTasks(void) {
   
   TaskHandle_t interruptTaskHandle;
   xTaskCreate(vEnableInterrupts, "interrupts", 128, NULL, tskIDLE_PRIORITY, &interruptTaskHandle);
+
+  xTaskCreate(vFlashBuffer, "interrupts", 256, NULL, tskIDLE_PRIORITY + 1, TaskList_new());
+
   return true;
 }

@@ -88,7 +88,7 @@
     .ocpTrim          = 0x1B,         \
     .rxFifoBaseAddr   = 0x00,         \
     .txFifoBaseAddr   = 0x00,         \
-    .maxPayloadLength = 0x20          \
+    .maxPayloadLength = 0x21          \
   }
 // clang-format on
 

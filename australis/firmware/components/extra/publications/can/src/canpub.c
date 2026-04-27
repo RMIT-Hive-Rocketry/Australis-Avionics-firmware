@@ -139,7 +139,7 @@ void vCanTransmit(void *argument) {
 
   vCanTransmit_END:
     TickType_t xLastWakeTime = xTaskGetTickCount();
-    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(150));
+    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(10));
 
   }
 }
