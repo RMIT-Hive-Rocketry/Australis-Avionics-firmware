@@ -1,0 +1,6 @@
+Device STM32F439II
+SelectInterface JTAG
+Speed auto
+JTAGConf 0 0
+Connect
+LoadFile ../../../../output/bin/Test-Units/Test-Units_BQueue.elf
