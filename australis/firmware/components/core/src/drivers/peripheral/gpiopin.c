@@ -10,6 +10,24 @@
 #include "gpiopin.h"
 #include "stddef.h"
 
+
+GPIO_Config GPIO_Config_Default = {
+  GPIO_MODE_OUTPUT,
+  GPIO_TYPE_PUSHPULL,
+  GPIO_SPEED_HIGH,
+  GPIO_PUPD_NONE,
+  GPIO_AF0
+};
+
+GPIO_Config GPIO_Config_Input = {
+  GPIO_MODE_INPUT,
+  GPIO_TYPE_PUSHPULL,
+  GPIO_SPEED_HIGH,
+  GPIO_PUPD_PULLUP,
+  GPIO_AF0
+};
+
+
 static void _GPIOpin_init(GPIO_TypeDef *, GPIO_Pin, GPIO_Config *);
 
 /* =============================================================================== */

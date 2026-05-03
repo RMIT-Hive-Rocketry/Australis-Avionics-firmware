@@ -1,13 +1,17 @@
-/**
- * @author Matt Ricci
- * @addtogroup UART
- * @{
- * @addtogroup GPS
- * @}
- * @todo Add to UART group
- */
+/*******************************************************************************
+sam_m10q.h
+Driver for the SAM_M10Q chip, used for GPS data.
 
-// ALLOW FORMATTING
+SAM_M10Q is used for retrieving GPS data. It is a complex chip with its own CPU
+ and firmware.
+Communication is done over UART according to the default settings of the SAM_M10Q
+ chip. We use the UBX protocol, because NMEA/PUBX requires heavy string
+ processing which is error prone, especially in C, while UBX is a fixed binary
+ format.
+The datasheet used for UBX protocol specification is "u-blox M10 SPG 5.10", with
+ the document number "UBX-21035062 - R03"
+*******************************************************************************/
+
 #ifndef GPS_H
 #define GPS_H
 
@@ -15,52 +19,111 @@
 #include "stdbool.h"
 #include "uart.h"
 
-#define GPS_PUBX_SILENCE                                                       \
-  "$PUBX,40,GLL,0,0,0,0,0,0*5C\r\n$PUBX,40,RMC,0,0,0,0,0,0*47\r\n$PUBX,40,"    \
-  "GSA,0,0,0,0,0,0*4E\r\n$PUBX,40,GSV,0,0,0,0,0,0*59\r\n$PUBX,40,GGA,0,0,0,0," \
-  "0,0*5A\r\n$PUBX,40,VTG,0,0,0,0,0,0*5E\r\n$PUBX,40,GSV,0,0,0,0,0,0*59\r\n"
-
-#define GPS_PUBX_POLL                      "$PUBX,00*33\r\n"
-
-#define SAM_M10Q_PUBX_POSITION_FIELD_COUNT 22
-#define SAM_M10Q_PUBX_POSITION_TOKEN       0
-#define SAM_M10Q_PUBX_POSITION_ID          1
-#define SAM_M10Q_PUBX_POSITION_TIME        2
-#define SAM_M10Q_PUBX_POSITION_LAT         3
-#define SAM_M10Q_PUBX_POSITION_NS          4
-#define SAM_M10Q_PUBX_POSITION_LONG        5
-#define SAM_M10Q_PUBX_POSITION_EW          6
-#define SAM_M10Q_PUBX_POSITION_NAV_STAT    8
-
-/**
- * @addtogroup GPS
- * @{
- */
-
-typedef struct {
-  char time[15];
-  float latitude;
-  char ns;
-  float longitude;
-  char ew;
-  char altref[15];
-  char navstat[2];
-} SAM_M10Q_Data;
-
+// Definition of the SAM_M10Q device.
 typedef struct SAM_M10Q {
   UART_t *uart;
-  uint32_t baud;
-  SAM_M10Q_Data sampleData;
-  void (*message)(struct SAM_M10Q *, char *);
-  void (*setBaud)(struct SAM_M10Q *gps, uint32_t baud);                         //!<
-  void (*pollPUBX)(struct SAM_M10Q *gps);                                       //!<
-  bool (*parsePUBX)(struct SAM_M10Q *gps, uint8_t *bytes, SAM_M10Q_Data *data); //!<
+  GPIOpin_t _reset;
+  GPIOpin_t _tx;
+  GPIOpin_t _rx;
 } SAM_M10Q_t;
 
-bool SAM_M10Q_init(SAM_M10Q_t *gps, UART_t *uart, uint32_t baud);
-void SAM_M10Q_setBaud(SAM_M10Q_t *gps, uint32_t baud);
-void SAM_M10Q_pollPUBX(SAM_M10Q_t *gps);
-bool SAM_M10Q_parsePUBX(SAM_M10Q_t *gps, uint8_t *bytes, SAM_M10Q_Data *data);
+
+
+
+// Essential Frame Structures
+
+typedef struct {
+  uint8_t class;
+  uint8_t class_id;
+} SAM_M10Q_ID_t
+
+typedef struct {
+  uint8_t ck_a;
+  uint8_t ck_b;
+} UBX_Checksum_t;
+
+// Identifies a group of message IDs.
+// Not all are implemented; add as necessary.
+typedef enum {
+  UBX_MSG_ACK = 0x05,
+  UBX_MSG_CFG = 0x06,
+  UBX_MSG_NAV = 0x01,
+} UBX_Message_Class;
+
+
+// Message identifier.
+// Not all are implemented; add as necessary.
+typedef enum : SAM_M10Q_ID_t {
+  // UBX_FAILED_MESSAGE is an unofficial ID we use to indicate a bad packet.
+  UBX_FAILED_MESSAGE = { .class = 0xFF,        .class_id = 0xFF };
+  UBX_ACK_ACK        = { .class = UBX_MSG_ACK, .class_id = 0x01 };
+  UBX_ACK_NAK        = { .class = UBX_MSG_ACK, .class_id = 0x00 };
+  UBX_CFG_VALSET     = { .class = UBX_MSG_CFG, .class_id = 0x8a };
+  UBX_NAV_POSLLH     = { .class = UBX_MSG_NAV, .class_id = 0x02 };
+} UBX_Message_ID_t;
+
+// A complete UBX frame.
+typedef struct {
+  uint8_t sync[2] : { 0xb5, 0x62 };
+  UBX_Message_ID_t id;
+  uint16_t length;
+  uint8_t payload[28]; // Length should be the maximum expected frame size.
+  UBX_Checksum_t checksum;
+} UBX_Frame_t;
+
+
+// Payload Structures
+// For messages, there will be two structures.
+//  - The actual payload return structure, one-to-one with the datasheet.
+//  - The post-processed data structure.
+// They are distinguished to prevent confusion.
+
+
+typedef struct {
+  uint32_t iTOW;
+  int32_t lon;
+  int32_t lat;
+  int32_t height;
+  int32_t hMSL;
+  uint32_t hAcc;
+} UBX_Payload_NAV_POSLLH_t;
+
+typedef struct {
+  double longitude;
+  double latitude;
+  double accuracy;
+} GPS_Coordinates_t;
+
+
+
+typedef struct {
+  uint8_t version;
+  uint8_t layers;
+  uint16_t _reserved0;
+  uint8_t* config; // An arbitrary length list of key-value pairs.
+} UBX_Payload_CFG_SETVAL_t;
+
+
+
+
+typedef enum {
+  
+} UBX_Configurations_t;
+
+
+// FUNCTIONS
+
+
+bool
+SAM_M10Q_Receive(UBX_Frame_t* frame);
+
+
+
+bool
+SAM_M10Q_Init();
+
+
+
 
 /** @} */
 #endif

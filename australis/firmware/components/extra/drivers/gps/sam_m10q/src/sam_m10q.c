@@ -1,11 +1,4 @@
-/**************************************************************************************************
- * @file        gps.c                                                                             *
- * @author      Matt Ricci                                                                        *
- * @addtogroup  GPS                                                                               *
- * @brief       Brief description of the file's purpose.                                          *
- *                                                                                                *
- * @{                                                                                             *
- **************************************************************************************************/
+// sam_m10q.c
 
 #include "sam_m10q.h"
 
@@ -13,134 +6,211 @@
 #include "stdio.h"
 #include "stdlib.h"
 
-static uint8_t _checksumNMEA(const char *str);
+SAM_M10Q_t gps;
 
-/* ============================================================================================== */
-/**
- * @brief
- *
- * @param
- *
- * @return
- **
- * ============================================================================================== */
-bool SAM_M10Q_init(SAM_M10Q_t *gps, UART_t *uart, uint32_t baud) {
-  gps->uart      = uart;
-  gps->setBaud   = SAM_M10Q_setBaud;
-  gps->pollPUBX  = SAM_M10Q_pollPUBX;
-  gps->parsePUBX = SAM_M10Q_parsePUBX;
-  gps->baud      = baud;
+//TODO: Need to add STOP configuration to UART Config
+const UART_Config UART_Config_SAM_M10Q = {
+  .OVER8  = UART_OVER8,            // Required
+  .M      = UART_WORD8,            // Required (SAM M10Q)
+  .WAKE   = UART_WAKEUP_IDLE,      // Required
+  .PCE    = false,                 // Required (SAM M10Q)
+  .PS     = UART_PARITY_EVEN,      // Value does not matter
+  .PEIE   = false,                 // Disabled
+  .TXEIE  = false,                 // Disabled
+  .TCIE   = false,                 // Disabled
+  .RXNEIE = false,                 // Disabled
+  .IDLEIE = false,                 // Disabled
+  .TE     = true,                  // Required
+  .RE     = true,                  // Required
+  .RWU    = UART_RECEIVER_ACTIVE   // Active Mode
+};
 
-  gps->uart->print(gps->uart, GPS_PUBX_SILENCE);
-  gps->setBaud(gps, gps->baud);
 
+
+//TODO: Need to increase the baud rate of the UART line, otherwise a packet
+// may take over 
+
+bool
+SAM_M10Q_Init() {
+  
+  // We initialize the UART line with the defualt baud rate of the SAM_M10Q.
+  // Once the lines are up, we will then mutually configure the line to be
+  // a higher baud rate.
+  gps->uart = UART_init(GPS_INTERFACE, 38400, &UART_Config_SAM_M10Q);
+
+  // Enable RX/TX ports.
+  gps->_tx = GPIOpin_init(GPS_PORT, GPS_TX_PIN, &GPIO_Config_Default);
+  gps->_rx = GPIOpin_init(GPS_PORT, GPS_RX_PIN, &GPIO_Config_Input);
+
+  // Enable the GPS reset and keep it high to turn on the device.
+  gps._reset = GPIOpin_init(GPS_RESET_PORT, GPS_RESET_PIN, &GPIO_Config_Default);
+  gps._reset.set(&gps);
+
+
+  //TODO Set the baud rate higher.
+
+  //TODO Wait 100ms before starting.
+  
   return true;
 }
 
-/* ============================================================================================== */
-/**
- * @brief
- *
- * @param
- *
- * @return
- **
- * ============================================================================================== */
-// clang-format off
-void SAM_M10Q_setBaud(SAM_M10Q_t *gps, uint32_t baud) {
-  char str1[35]; char str2[35]; char *_str = "$PUBX,41,1,0003,0003,%u,0*%x\r\n";
-  snprintf(str1, sizeof(str1), _str, baud, 0);
-  snprintf(str2, sizeof(str2), _str, baud, _checksumNMEA(str1));
-  gps->uart->print(gps->uart, str2);
-  gps->uart->setBaud(gps->uart, baud);
-}
-// clang-format on
 
-/* ============================================================================================== */
-/**
- * @brief
- *
- * @param
- *
- * @return
- **
- * ============================================================================================== */
-void SAM_M10Q_pollPUBX(SAM_M10Q_t *gps) {
-  UART_t *uart = gps->uart;
-  uart->print(uart, GPS_PUBX_POLL);
-}
+// Function
+// Retrieve a frame from the GPS chip.
+bool
+SAM_M10Q_Receive(UART_t* uart, UBX_Frame_t* frame) {
 
-/* ============================================================================================== */
-/**
- * @brief
- *
- * @param
- *
- * @return
- **
- * ============================================================================================== */
-bool SAM_M10Q_parsePUBX(SAM_M10Q_t *gps, uint8_t *bytes, SAM_M10Q_Data *data) {
-  char *string      = (char *)bytes;
-  char *const delim = ",";
+  uint8_t* ptr_start, ptr_end;
 
-  char *tokens[SAM_M10Q_PUBX_POSITION_FIELD_COUNT];
-
-  char *token       = strtok(string, ",");
-  uint8_t numTokens = 0;
-  // Tokenize string data into array
-  while (token != NULL && numTokens < SAM_M10Q_PUBX_POSITION_FIELD_COUNT) {
-    tokens[numTokens++] = token;             // Store the token
-    token               = strtok(NULL, ","); // Get the next token
+  // Find the synchronization bits.
+  if (gps->uart.receive(&uart) != 0xb5) {
+    return false;
   }
-
-  // Early exit if first tokens aren't PUBX identifiers
-  if (strcmp(tokens[SAM_M10Q_PUBX_POSITION_TOKEN], "$PUBX")
-      || strcmp(tokens[SAM_M10Q_PUBX_POSITION_ID], "00")) {
+  if (gps->uart.receive(&uart) != 0x62) {
     return false;
   }
 
-  // Copy message tokens to GPS data struct
-  strncpy(&data->ns, tokens[SAM_M10Q_PUBX_POSITION_NS], sizeof(data->ns));
-  strncpy(&data->ew, tokens[SAM_M10Q_PUBX_POSITION_EW], sizeof(data->ew));
-  strncpy(data->time, tokens[SAM_M10Q_PUBX_POSITION_TIME], sizeof(data->time));
-  strncpy(data->navstat, tokens[SAM_M10Q_PUBX_POSITION_NAV_STAT], sizeof(data->navstat));
-
-  // Parse coordinates as floats
-  data->latitude  = strtof(tokens[SAM_M10Q_PUBX_POSITION_LAT], NULL);
-  data->longitude = strtof(tokens[SAM_M10Q_PUBX_POSITION_LONG], NULL);
-
-  if (data->ns == 'S') {
-    data->latitude = data->latitude * -1;
-  }
-  if (data->ew == 'W') {
-    data->longitude = data->longitude * -1;
+  // A frame has been successfully identified, and will be read in.
+  
+  // Record the sync, class, ID, and length.
+  ptr_start = (uint8_t*)frame;
+  ptr_end   = (uint8_t*)&frame->payload;
+  for (uint8_t* ptr = ptr_start; ptr < ptr_end; ptr++) {
+    *ptr = gps->uart.receive(&uart);
   }
 
-  gps->sampleData = *data;
+  // Record the payload.
+  ptr_start = (uint8_t*)&frame->payload;
+  ptr_end   = (uint8_t*)&frame->payload + frame.length;
+  for (uint8_t* ptr = ptr_start; ptr < ptr_end; ptr++) {
+    *ptr = gps->uart.receive(&uart);
+  }
 
+  // Record the checksum.
+  frame.checksum.ck_a = gps->uart.receive(&uart);
+  frame.checksum.ck_b = gps->uart.receive(&uart);
+
+  // If the checksum doesn't match, then raise the error indicator.
+  if (UBX_Checksum(frame) != frame.checksum) {
+    frame.id = UBX_FAILED_MESSAGE;
+  }
+
+  // Successfully received a frame.
   return true;
+
 }
 
-/* ============================================================================================== */
-/**
- * @brief
- *
- * @param
- *
- * @return
- **
- * ============================================================================================== */
 
-static uint8_t _checksumNMEA(const char *str) {
-  const char *n = str + 1; // Plus one, skip '$'
-  uint8_t chk   = 0;
+void
+SAM_M10Q_Transmit(UART_t* uart, UBX_Frame_t* frame) {
 
-  while ('*' != *n && '\n' != *n && '\0' != *n) {
-    chk ^= (uint8_t)*n;
-    n++;
+  uint8_t* ptr_start, ptr_end;
+
+  // Prepare parts of the frame.
+  frame->sync[0] = 0xb5;
+  frame->sync[1] = 0x62;
+  frame->checksum = UBX_Checksum(frame);
+
+  // Send the sync, class, ID, and length.
+  ptr_start = (uint8_t*)frame;
+  ptr_end   = (uint8_t*)&frame->payload;
+  for (uint8_t* ptr = ptr_start; ptr < ptr_end; ptr++) {
+    gps->uart.send(uart, *ptr);
   }
 
-  return chk;
+  // Send the payload.
+  ptr_start = (uint8_t*)&frame->payload;
+  ptr_end   = (uint8_t*)&frame->payload + frame.length;
+  for (uint8_t* ptr = ptr_start; ptr < ptr_end; ptr++) {
+    gps->uart.send(uart, *ptr);
+  }
+
+  // Send the checksum.
+  gps->uart.send(uart, frame->checksum.ck_a);
+  gps->uart.send(uart, frame->checksum.ck_b);
+
+  // Transmission is complete.
+                 
 }
 
-/** @} */
+
+bool
+UBX_Parse(UBX_Frame_t* frame) {
+
+  switch(frame->id) {
+  case UBX_NAV_POSLLM:
+    UBX_Parse_NAV_POSLLM(frame);
+    
+  default:
+    // Just discard the message, do not raise error.
+  }
+
+}
+
+
+void
+UBX_Configure() {
+
+  UBX_Frame_t frame;
+
+  UBX_Payload_CFG_SETVAL_t* payload = (uint8_t*) (&frame.data)
+
+  uint8_t config[10] = {
+    
+  };
+  
+}
+
+
+
+
+
+GPS_Coordinates_t
+UBX_Parse_NAV_POSLLM(UBX_Frame_t* frame) {
+
+  GPS_Coordinates_t coordinates;
+
+  UBX_Payload_NAV_POSLLH_t* payload = (UBX_Payload_NAV_POSLLH_t*) &frame->data;
+
+  // Section 3.15.10 of datasheet.
+  coordinates.longitude = ((double)payload->lon)  * 1e-7;
+  coordinates.latitude  = ((double)payload->lat)  * 1e-7;
+  coordinates.accuracy  = ((double)payload->hAcc) * 1e-3;
+
+  return coordinates;
+  
+}
+
+
+
+
+UBX_Checksum_t
+UBX_Checksum(UBX_Frame_t* frame) {
+
+  UBX_Checksum_t checksum;
+
+  // Apply Fletcher algorithm, as per SAM_M10Q datasheets.
+  for (uint16_t i = 0; i < frame->length; i++) {
+    checksum.ck_a += frame->payload[i];
+    checksum.ck_b += checksum.ck_a;
+  }
+
+  return checksum;
+
+}
+
+
+
+void checksum() {
+
+
+  uint8_t ck_a = 0;
+  uint8_t ck_b = 0;  
+  
+  for (int i = 0; i < data_length; i++) {
+    ck_a = ck_a + data[i];
+    ck_b = ck_b + ck_a;
+  }
+
+
+}

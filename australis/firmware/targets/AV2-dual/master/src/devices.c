@@ -42,6 +42,19 @@ static bool initFlash();
 static bool initLora();
 static bool initUart();
 
+
+bool Subsystem_Start_All() {
+  
+  config_ASSERT(Subsystem_Start_GPS());
+}
+
+
+bool Subsystem_Start_GPS() {
+  return SAM_M10Q_Init();
+}
+
+
+
 /* ============================================================================================== */
 /**
  * @brief Initialise and store device drivers.
@@ -347,30 +360,8 @@ bool initUart() {
   deviceList[DEVICE_UART_USB].deviceName = "USB";
   deviceList[DEVICE_UART_USB].device     = &usbUart;
 
-  // ==========================================================================
-  // GPS
-  //
-  // GPS device for low frequency positional readings. Commands are sent and
-  // data received via the UART interface.
 
-  GPIOpin_init(GPS_PORT, GPS_TX_PIN, &uartTxPinConfig);
-  GPIOpin_init(GPS_PORT, GPS_RX_PIN, &uartRxPinConfig);
-
-  static UART_t gpsUart;
-  gpsUart = UART_init(
-    GPS_INTERFACE,
-    9600,
-    &uartConfig
-  );
-
-  // Initialise GPS reset pin and device driver
-  GPIOpin_t gpsRST = GPIOpin_init(GPS_RESET, NULL);
-  gpsRST.set(&gpsRST); // Start reset pin high
-
-  static SAM_M10Q_t gps;
-  SAM_M10Q_init(&gps, &gpsUart, GPS_BAUD);
-  deviceList[DEVICE_GPS].deviceName = "GPS";
-  deviceList[DEVICE_GPS].device     = &gps;
+  Start_Subsystem_GPS();
 
   // @TODO: add in error checking
   return true;

@@ -13,9 +13,11 @@
 #include "stm32f439xx.h"
 #include "stdbool.h"
 
+//TODO Remove this macro.
 #define GPIO_PERIPHERAL_SIZE 0x3FF // Size of each GPIO in memory
 
-// Macro definitions for pin config literals
+//TODO Remove these macros and all similar ones, to be replaced
+// with actual values in memory.
 //
 // clang-format off
 #define GPIO_CONFIG_DEFAULT \
@@ -35,6 +37,10 @@
     GPIO_AF0                \
   }
 // clang-format on
+
+GPIO_Config GPIO_Config_Default;
+GPIO_Config GPIO_Config_Input; 
+
 
 /**
  * @ingroup GPIO

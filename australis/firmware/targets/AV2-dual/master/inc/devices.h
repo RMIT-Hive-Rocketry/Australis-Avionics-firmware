@@ -10,6 +10,8 @@
 
 bool initDevices();
 
+bool Subsystem_Start_All();
+
 /* ===================================================================== *
  *                           DEVICE DEFINITIONS                          *
  * ===================================================================== */
@@ -68,8 +70,7 @@ bool initDevices();
 #define GPS_RX_PIN            GPIO_PIN9                     // GPS Rx on PD9
 #define GPS_RESET_PORT        GPIOD                         // GPS reset pin on GPIOD
 #define GPS_RESET_PIN         GPIO_PIN13                    // Reset pin PD13
-#define GPS_RESET             GPS_RESET_PORT, GPS_RESET_PIN //
-#define GPS_BAUD              115200                        // 115200bps baud rate
+#define GPS_BAUD              38400                         // 115200bps baud rate
 
 /**********************  Peripheral bus definitions  *********************/
 

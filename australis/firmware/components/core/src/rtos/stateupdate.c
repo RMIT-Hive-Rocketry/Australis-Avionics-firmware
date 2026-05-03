@@ -8,6 +8,8 @@
 
 #include <stdint.h>
 
+#include <math.h>
+
 #include "FreeRTOS.h" // IWYU pragma: keep
 #include "portmacro.h"
 #include "projdefs.h"
@@ -66,7 +68,7 @@ void vStateUpdate(void *argument) {
 
     switch (state->flightState) {
     case PRELAUNCH:
-      if (accel->accelData[ZINDEX] >= ACCEL_LAUNCH) {
+      if (fabs(accel->accelData[ZINDEX]) >= ACCEL_LAUNCH) {
         xEventGroupSetBits(xTaskEnableGroup, GROUP_TASK_ENABLE_FLASH);   // Enable flash
         xEventGroupSetBits(xTaskEnableGroup, GROUP_TASK_ENABLE_HIGHRES); // Enable high resolution data acquisition
         xEventGroupSetBits(xTaskEnableGroup, GROUP_TASK_ENABLE_LOWRES);  // Enable low resolution data acquisition
