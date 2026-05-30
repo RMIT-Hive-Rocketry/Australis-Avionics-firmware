@@ -2,6 +2,10 @@
 #ifndef AUSTRALISCONFIG_H
 #define AUSTRALISCONFIG_H
 
+
+// Enforce flight computer model.
+#define FLIGHT_COMPUTER_AV2
+
 #define LORA_MSG_LENGTH             42
 #define UART_MSG_LENGTH            255
 

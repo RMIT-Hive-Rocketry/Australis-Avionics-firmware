@@ -16,31 +16,6 @@
 //TODO Remove this macro.
 #define GPIO_PERIPHERAL_SIZE 0x3FF // Size of each GPIO in memory
 
-//TODO Remove these macros and all similar ones, to be replaced
-// with actual values in memory.
-//
-// clang-format off
-#define GPIO_CONFIG_DEFAULT \
-  (GPIO_Config) {           \
-    GPIO_MODE_OUTPUT,       \
-    GPIO_TYPE_PUSHPULL,     \
-    GPIO_SPEED_HIGH,        \
-    GPIO_PUPD_NONE,         \
-    GPIO_AF0                \
-  }
-#define GPIO_CONFIG_INPUT   \
-  (GPIO_Config) {           \
-    GPIO_MODE_INPUT,        \
-    GPIO_TYPE_PUSHPULL,     \
-    GPIO_SPEED_HIGH,        \
-    GPIO_PUPD_PULLUP,       \
-    GPIO_AF0                \
-  }
-// clang-format on
-
-GPIO_Config GPIO_Config_Default;
-GPIO_Config GPIO_Config_Input; 
-
 
 /**
  * @ingroup GPIO
@@ -165,6 +140,37 @@ typedef struct GPIOpin {
   void (*toggle)(struct GPIOpin *);                      //!< @see GPIOpin_toggle
   void (*updateConfig)(struct GPIOpin *, GPIO_Config *); //!< @see GPIOpin_updateConfig
 } GPIOpin_t;
+
+
+
+
+//TODO Remove these macros and all similar ones, to be replaced
+// with actual values in memory.
+//
+// clang-format off
+#define GPIO_CONFIG_DEFAULT \
+  (GPIO_Config) {           \
+    GPIO_MODE_OUTPUT,       \
+    GPIO_TYPE_PUSHPULL,     \
+    GPIO_SPEED_HIGH,        \
+    GPIO_PUPD_NONE,         \
+    GPIO_AF0                \
+  }
+#define GPIO_CONFIG_INPUT   \
+  (GPIO_Config) {           \
+    GPIO_MODE_INPUT,        \
+    GPIO_TYPE_PUSHPULL,     \
+    GPIO_SPEED_HIGH,        \
+    GPIO_PUPD_PULLUP,       \
+    GPIO_AF0                \
+  }
+// clang-format on
+
+extern GPIO_Config GPIO_Config_Default;
+extern GPIO_Config GPIO_Config_Input; 
+
+
+
 
 GPIOpin_t GPIOpin_init(GPIO_TypeDef *, GPIO_Pin, GPIO_Config *);
 bool GPIOpin_isSet(GPIOpin_t *);

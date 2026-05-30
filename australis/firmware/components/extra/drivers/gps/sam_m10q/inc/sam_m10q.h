@@ -4,81 +4,112 @@ Driver for the SAM_M10Q chip, used for GPS data.
 
 SAM_M10Q is used for retrieving GPS data. It is a complex chip with its own CPU
  and firmware.
-Communication is done over UART according to the default settings of the SAM_M10Q
- chip. We use the UBX protocol, because NMEA/PUBX requires heavy string
- processing which is error prone, especially in C, while UBX is a fixed binary
- format.
-The datasheet used for UBX protocol specification is "u-blox M10 SPG 5.10", with
- the document number "UBX-21035062 - R03"
+Communication is done over UART according to default settings of the SAM_M10Q
+ chip. We use the UBX protocol as NMEA/PUBX requires heavy string processing,
+ which is error prone especially in C, while UBX is a fixed binary format.
 *******************************************************************************/
 
-#ifndef GPS_H
-#define GPS_H
+/*******************************************************************************
+References
+[1] u-blox M10 SPG 5.10 - Standard precision GNSS firmware
+    Protocol version 34.10
+    https://content.u-blox.com/sites/default/files/u-blox-M10-SPG-5.10_InterfaceDescription_UBX-21035062.pdf
+[2] SAM-M10Q - Standard precision GNSS antenna module
+    Integration Manual
+    https://content.u-blox.com/sites/default/files/documents/SAM-M10Q_IntegrationManual_UBX-22020019.pdf
+[3] SAM-M10Q - u-blox M10 standard precision GNSS antenna module
+    Data sheet
+    https://content.u-blox.com/sites/default/files/documents/SAM-M10Q_DataSheet_UBX-22013293.pdf
+******************************************************************************/
 
-#include "stdint.h"
-#include "stdbool.h"
+#ifndef SAM_M10Q_H
+#define SAM_M10Q_H
+
+#include "sam_m10q_AV2.h"
+
+#include <stdint.h>
+#include <stdbool.h>
+#include <stddef.h>
+
+#include "gpiopin.h"
 #include "uart.h"
 
-// Definition of the SAM_M10Q device.
-typedef struct SAM_M10Q {
-  UART_t *uart;
-  GPIOpin_t _reset;
-  GPIOpin_t _tx;
-  GPIOpin_t _rx;
-} SAM_M10Q_t;
+
+// Post-processed data from UBX_Payload_NAV_POSLLH_t
+typedef struct {
+  float longitude;
+  float latitude;
+  float accuracy;
+} GPS_Coordinates_t;
+
+
+typedef enum {
+  SAM_M10Q_Frame_State__Sync_Wait,
+  SAM_M10Q_Frame_State__Incoming,
+  SAM_M10Q_Frame_State__Complete
+} SAM_M10Q_Frame_State_t;
 
 
 
 
 // Essential Frame Structures
-
-typedef struct {
+typedef struct __attribute__((packed)) {
   uint8_t class;
-  uint8_t class_id;
-} SAM_M10Q_ID_t
+  uint8_t id;
+} UBX_Message_t;
 
-typedef struct {
+
+// Fletcher's checksum algorithm [1, pp.44]
+typedef struct __attribute__((packed)) {
   uint8_t ck_a;
   uint8_t ck_b;
 } UBX_Checksum_t;
 
-// Identifies a group of message IDs.
-// Not all are implemented; add as necessary.
-typedef enum {
-  UBX_MSG_ACK = 0x05,
-  UBX_MSG_CFG = 0x06,
-  UBX_MSG_NAV = 0x01,
-} UBX_Message_Class;
 
+// Message identifiers [1, pp.46-48]
+extern const UBX_Message_t UBX_ACK_ACK;
+extern const UBX_Message_t UBX_ACK_NAK;
+extern const UBX_Message_t UBX_CFG_VALSET;
+extern const UBX_Message_t UBX_NAV_POSLLH;
 
-// Message identifier.
-// Not all are implemented; add as necessary.
-typedef enum : SAM_M10Q_ID_t {
-  // UBX_FAILED_MESSAGE is an unofficial ID we use to indicate a bad packet.
-  UBX_FAILED_MESSAGE = { .class = 0xFF,        .class_id = 0xFF };
-  UBX_ACK_ACK        = { .class = UBX_MSG_ACK, .class_id = 0x01 };
-  UBX_ACK_NAK        = { .class = UBX_MSG_ACK, .class_id = 0x00 };
-  UBX_CFG_VALSET     = { .class = UBX_MSG_CFG, .class_id = 0x8a };
-  UBX_NAV_POSLLH     = { .class = UBX_MSG_NAV, .class_id = 0x02 };
-} UBX_Message_ID_t;
 
 // A complete UBX frame.
-typedef struct {
-  uint8_t sync[2] : { 0xb5, 0x62 };
-  UBX_Message_ID_t id;
+typedef struct __attribute__((packed)) {
+  uint8_t sync[2];
+  UBX_Message_t message;
   uint16_t length;
-  uint8_t payload[28]; // Length should be the maximum expected frame size.
+  uint8_t payload[28]; // Byte offset 6. Length should be the maximum expected frame size.
   UBX_Checksum_t checksum;
 } UBX_Frame_t;
 
-
-// Payload Structures
-// For messages, there will be two structures.
-//  - The actual payload return structure, one-to-one with the datasheet.
-//  - The post-processed data structure.
-// They are distinguished to prevent confusion.
+#define PAYLOAD_BYTE_OFFSET 6
 
 
+
+
+// Definition of the SAM_M10Q device.
+typedef struct SAM_M10Q {
+  
+  UART_t uart;
+  GPS_Coordinates_t coordinates;
+
+  // Pin outputs related to GPS.
+  GPIOpin_t _reset;
+  GPIOpin_t _tx;
+  GPIOpin_t _rx;
+
+  // Flags to indicate communication status.
+  SAM_M10Q_Frame_State_t _message_state;
+  uint16_t _message_position;
+  UBX_Frame_t _message_frame;
+  
+} SAM_M10Q_t;
+
+extern SAM_M10Q_t* gps;
+
+
+
+// Payload binary format [1, pp.97]
 typedef struct {
   uint32_t iTOW;
   int32_t lon;
@@ -88,27 +119,32 @@ typedef struct {
   uint32_t hAcc;
 } UBX_Payload_NAV_POSLLH_t;
 
-typedef struct {
-  double longitude;
-  double latitude;
-  double accuracy;
-} GPS_Coordinates_t;
 
 
-
-typedef struct {
+// Payload binary format [1, pp.55]
+typedef struct __attribute__((packed)) {
   uint8_t version;
   uint8_t layers;
   uint16_t _reserved0;
-  uint8_t* config; // An arbitrary length list of key-value pairs.
-} UBX_Payload_CFG_SETVAL_t;
+  uint8_t config[28]; // An arbitrary length list of key-value pairs.
+  size_t _config_length;
+} UBX_Payload_CFG_VALSET_t;
 
 
 
-
-typedef enum {
+typedef enum : uint32_t {
   
-} UBX_Configurations_t;
+  // CFG-UART1
+  UBX_CFG_UART1_BAUDRATE = 0x40520001, // [1, pp.155]
+  
+} UBX_Configuration_Key_t;
+
+
+typedef struct {
+  UBX_Configuration_Key_t key;
+  uint8_t value[8];
+  size_t  value_size;
+} UBX_Configuration_t;
 
 
 // FUNCTIONS
@@ -123,7 +159,14 @@ bool
 SAM_M10Q_Init();
 
 
+typedef enum {
+  Code__UBX_Configure__Success,
+  Code__UBX_Configure__Payload_Size_Exceeded
+} Code__UBX_Configure_t;
 
 
-/** @} */
-#endif
+
+bool
+UBX_Configure(SAM_M10Q_t* gps, UBX_Configuration_t config);
+
+#endif /* SAM_M10Q_H */

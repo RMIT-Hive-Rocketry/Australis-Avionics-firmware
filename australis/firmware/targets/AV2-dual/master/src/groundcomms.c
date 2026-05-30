@@ -34,7 +34,7 @@
 #include "broadcast_queue.h"
 
 static void sendGroundPacket1(uint8_t broadcastBegin);
-static void sendGroundPacket2(SAM_M10Q_Data *data);
+static void sendGroundPacket2(GPS_Coordinates_t* data);
 
 /* =============================================================================== */
 /**
@@ -88,7 +88,7 @@ void vGroundCommStateMachine(void *argument) {
           sendGroundPacket1(broadcastFlag);
           // --- Transmit GPS Data ---
           vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(380));
-          sendGroundPacket2(&gps->sampleData);
+          sendGroundPacket2(&gps->coordinates);
           break;
         default:
           // Do not process if packet is invalid
@@ -115,7 +115,7 @@ void vGroundCommStateMachine(void *argument) {
         // --- Broadcast Telemetry ---
         // Broadcast has already been started, continuously send data
         sendGroundPacket1(broadcastFlag);
-        sendGroundPacket2(&gps->sampleData);
+        sendGroundPacket2(&gps->coordinates);
         vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(150));
       }
 
@@ -239,7 +239,7 @@ void sendGroundPacket1(uint8_t broadcastBegin) {
  *
  **
  * =============================================================================== */
-void sendGroundPacket2(SAM_M10Q_Data *data) {
+void sendGroundPacket2(GPS_Coordinates_t* data) {
 
   LoRa_Message_t message;
   message.length = 28;
@@ -287,8 +287,8 @@ void sendGroundPacket2(SAM_M10Q_Data *data) {
            .data = (uint8_t *)&data->longitude
           },
           {// [9:8] GPS navigation status
-           .size = sizeof(data->navstat),
-           .data = (uint8_t *)data->navstat
+           .size = 2, //sizeof(data->navstat),
+           .data = 0 // (uint8_t *)data->navstat
           },
           {// [13:10]
            .size = sizeof(q.w),

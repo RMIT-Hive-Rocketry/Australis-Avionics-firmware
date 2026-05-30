@@ -43,14 +43,13 @@ static bool initLora();
 static bool initUart();
 
 
-bool Subsystem_Start_All() {
-  
-  config_ASSERT(Subsystem_Start_GPS());
-}
-
 
 bool Subsystem_Start_GPS() {
   return SAM_M10Q_Init();
+}
+
+bool Subsystem_Start_All() {
+  configASSERT(Subsystem_Start_GPS());
 }
 
 
@@ -361,7 +360,10 @@ bool initUart() {
   deviceList[DEVICE_UART_USB].device     = &usbUart;
 
 
-  Start_Subsystem_GPS();
+  Subsystem_Start_GPS();
+
+  deviceList[DEVICE_GPS].deviceName = "GPS";
+  deviceList[DEVICE_GPS].device = gps;
 
   // @TODO: add in error checking
   return true;
