@@ -131,11 +131,36 @@ typedef struct __attribute__((packed)) {
 } UBX_Payload_CFG_VALSET_t;
 
 
-
 typedef enum : uint32_t {
+
+  // Message outputs which are on SAM_M10Q startup turned on, that we want to
+  // disable [1, pp.164].
+  CFG_MSGOUT_NMEA_ID_GGA_I2C   = 0x209100ba,
+    CFG_MSGOUT_NMEA_ID_GGA_SPI   = 0x209100be,
+    CFG_MSGOUT_NMEA_ID_GGA_UART1 = 0x209100bb,
+    CFG_MSGOUT_NMEA_ID_GLL_I2C   = 0x209100c9,
+    CFG_MSGOUT_NMEA_ID_GLL_SPI   = 0x209100cd,
+    CFG_MSGOUT_NMEA_ID_GLL_UART1 = 0x209100ca,
+    CFG_MSGOUT_NMEA_ID_GSA_I2C   = 0x209100bf,
+    CFG_MSGOUT_NMEA_ID_GSA_SPI   = 0x209100c3,
+    CFG_MSGOUT_NMEA_ID_GSA_UART1 = 0x209100c0,
+    CFG_MSGOUT_NMEA_ID_GSV_I2C   = 0x209100c4,
+    CFG_MSGOUT_NMEA_ID_GSV_SPI   = 0x209100c8,
+    CFG_MSGOUT_NMEA_ID_GSV_UART1 = 0x209100c5,
+    CFG_MSGOUT_NMEA_ID_RMC_I2C   = 0x209100ab,
+    CFG_MSGOUT_NMEA_ID_RMC_SPI   = 0x209100af,
+    CFG_MSGOUT_NMEA_ID_RMC_UART1 = 0x209100ac,
+    CFG_MSGOUT_NMEA_ID_VTG_I2C   = 0x209100b0,
+    CFG_MSGOUT_NMEA_ID_VTG_SPI   = 0x209100b4,
+    CFG_MSGOUT_NMEA_ID_VTG_UART1 = 0x209100b1,
+
+
+    // Messages we wish to enable.
+    CFG_MSGOUT_UBX_NAV_POSLLH_UART1 = 0x2091002a,
+    
   
-  // CFG-UART1
-  UBX_CFG_UART1_BAUDRATE = 0x40520001, // [1, pp.155]
+    // CFG-UART1
+    UBX_CFG_UART1_BAUDRATE = 0x40520001, // [1, pp.155]
   
 } UBX_Configuration_Key_t;
 
@@ -151,7 +176,7 @@ typedef struct {
 
 
 bool
-SAM_M10Q_Receive(UBX_Frame_t* frame);
+SAM_M10Q_Receive();
 
 
 
@@ -167,6 +192,10 @@ typedef enum {
 
 
 bool
-UBX_Configure(SAM_M10Q_t* gps, UBX_Configuration_t config);
+UBX_Configure(UBX_Configuration_t config);
+
+
+void
+UBX_Configure_Default();
 
 #endif /* SAM_M10Q_H */

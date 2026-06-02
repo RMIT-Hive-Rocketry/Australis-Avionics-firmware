@@ -34,6 +34,7 @@
 #include "canpub.h"
 
 #include "lorapub.h"
+#include "rcc.h"
 
 static DeviceHandle_t deviceList[DEVICE_MAX_KEYS];
 

@@ -24,6 +24,8 @@
 
 #include "flashwrite.h"
 
+#include "sam_m10q.h"
+
 void vHeartbeatBlink(void *argument) {
   (void)argument;
 
@@ -62,8 +64,8 @@ void vEnableInterrupts(void *argument) {
   NVIC_EnableIRQ(EXTI1_IRQn);
   //NVIC_SetPriority(USART1_IRQn, 10);
   //NVIC_EnableIRQ(USART1_IRQn);
-  //NVIC_SetPriority(USART3_IRQn, 11);
-  //NVIC_EnableIRQ(USART3_IRQn);
+  NVIC_SetPriority(USART3_IRQn, 11);
+  NVIC_EnableIRQ(USART3_IRQn);
   EXTI->RTSR        |= 0x02;
   EXTI->IMR         |= 0x02;
   SYSCFG->EXTICR[0] &= ~0xF0;
@@ -132,6 +134,19 @@ void vAerobrakesSendData(void *argument) {
 }
 
 
+
+void vGPS_Data(void *argument) {
+
+  const TickType_t xFrequency = pdMS_TO_TICKS(10); // 100Hz
+
+  while (1)
+    {
+      while (!SAM_M10Q_Receive());
+
+      
+    }
+}
+
 /* ============================================================================================== */
 /**
  * @brief Initialise and store FreeRTOS task handles not handled by the Australis core.
@@ -156,7 +171,8 @@ bool initTasks(void) {
   TaskHandle_t interruptTaskHandle;
   xTaskCreate(vEnableInterrupts, "interrupts", 128, NULL, tskIDLE_PRIORITY, &interruptTaskHandle);
 
-  xTaskCreate(vFlashBuffer, "interrupts", 256, NULL, tskIDLE_PRIORITY + 1, TaskList_new());
-
+  //xTaskCreate(vFlashBuffer, "interrupts", 256, NULL, tskIDLE_PRIORITY + 1, TaskList_new());
+  xTaskCreate(vGPS_Data, "GPS", 256, NULL, configMAX_PRIORITIES - 5, TaskList_new());
+  
   return true;
 }
