@@ -125,7 +125,7 @@ typedef struct {
 typedef struct __attribute__((packed)) {
   uint8_t version;
   uint8_t layers;
-  uint16_t _reserved0;
+  uint8_t _reserved0[2];
   uint8_t config[28]; // An arbitrary length list of key-value pairs.
   size_t _config_length;
 } UBX_Payload_CFG_VALSET_t;
@@ -165,9 +165,10 @@ typedef enum : uint32_t {
 } UBX_Configuration_Key_t;
 
 
-typedef struct {
+typedef struct __attribute__((packed)) {
   UBX_Configuration_Key_t key;
-  uint8_t value[8];
+  //uint8_t value[8];
+  uint8_t value;
   size_t  value_size;
 } UBX_Configuration_t;
 

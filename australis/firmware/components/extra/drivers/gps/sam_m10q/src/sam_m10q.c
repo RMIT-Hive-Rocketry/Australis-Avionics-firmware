@@ -17,7 +17,7 @@ static UART_Config UART_Config_SAM_M10Q = {
   .PEIE   = false,                 // Disabled
   .TXEIE  = false,                 // Disabled
   .TCIE   = false,                 // Disabled
-  .RXNEIE = true,                  // Required
+  .RXNEIE = false,                 // Disabled (Enable in future)
   .IDLEIE = false,                 // Disabled
   .TE     = true,                  // Required
   .RE     = true,                  // Required
@@ -51,6 +51,8 @@ static UBX_Checksum_t
 UBX_Checksum(UBX_Frame_t* frame) {
 
   UBX_Checksum_t checksum;
+  checksum.ck_a = 0x00;
+  checksum.ck_b = 0x00;
 
   // Apply Fletcher algorithm, as per SAM_M10Q datasheets.
   for (uint16_t i = 0; i < frame->length; i++) {
@@ -129,7 +131,11 @@ SAM_M10Q_Init() {
 bool
 SAM_M10Q_Receive() {
 
+  static uint8_t HISTORY[256];
+  static uint16_t HISTORY_I = 0;
+
   uint8_t byte = gps->uart.receive(&gps->uart);
+  if (HISTORY_I < 256) HISTORY[HISTORY_I++] = byte; else HISTORY_I = 0;
 
   uint8_t* frame = (uint8_t*) &gps->_message_frame;
 
@@ -208,17 +214,23 @@ SAM_M10Q_Transmit(UBX_Frame_t* frame) {
   frame->checksum = UBX_Checksum(frame);
 
   // Send the sync, class, ID, and length.
-  ptr_start = (uint8_t*)frame;
-  ptr_end   = (uint8_t*)(&frame->payload);
-  for (uint8_t* ptr = ptr_start; ptr < ptr_end; ptr++) {
-    gps->uart.send(uart, *ptr);
-  }
+  gps->uart.send(uart, frame->sync[0]);
+  gps->uart.send(uart, frame->sync[1]);
+  gps->uart.send(uart, frame->message.class);
+  gps->uart.send(uart, frame->message.id);
+  gps->uart.send(uart, (uint8_t) (frame->length & 0xFF));
+  gps->uart.send(uart, (uint8_t) (frame->length >> 8));
+  
+  // ptr_start = (uint8_t*)frame;
+  // ptr_end   = (uint8_t*)(&frame->payload);
+  // for (uint8_t* ptr = ptr_start; ptr < ptr_end; ptr++) {
+  //   gps->uart.send(uart, *ptr);
+  // }
 
   // Send the payload.
-  ptr_start = (uint8_t*)&frame->payload;
-  ptr_end   = (uint8_t*)&frame->payload + frame->length;
-  for (uint8_t* ptr = ptr_start; ptr < ptr_end; ptr++) {
-    gps->uart.send(uart, *ptr);
+  uint8_t* payload = (uint8_t*)&frame->payload;
+  for (uint8_t i = 0; i < frame->length; i++) {
+    gps->uart.send(uart, payload[i]);
   }
 
   // Send the checksum.
@@ -298,12 +310,16 @@ UBX_Configure(UBX_Configuration_t config) {
   uint8_t* ptr_destination;
 
   UBX_Frame_t frame;
+  frame.message.class = UBX_CFG_VALSET.class;
+  frame.message.id    = UBX_CFG_VALSET.id;
 
+  
   UBX_Payload_CFG_VALSET_t* payload = (UBX_Payload_CFG_VALSET_t*) &frame.payload;
-
   payload->version = 0x00;
-  payload->layers = 0x01; // Store in RAM layer.
-
+  payload->layers = 0x81; // Store in RAM layer.
+  payload->_reserved0[0] = 0x00;
+  payload->_reserved0[1] = 0x00;
+  
   // Copy the configuration key.
   ptr_destination = (uint8_t*)&payload->config;
   ptr_source      = (uint8_t*)&config.key;
@@ -318,8 +334,8 @@ UBX_Configure(UBX_Configuration_t config) {
     ptr_destination[i] = ptr_source[i];
   }
 
-  // Make sure to set payload size.
-  frame.length = sizeof(config.key) + config.value_size;
+  // Set length as required for CFG-VALSET [1, pp.55]
+  frame.length = 4 + sizeof(config.key) + config.value_size;
 
   // Send configuration message.
   SAM_M10Q_Transmit(&frame);
