@@ -32,35 +32,26 @@
 #define SAM_M10Q_PUBX_POSITION_EW          6
 #define SAM_M10Q_PUBX_POSITION_NAV_STAT    8
 
-/**
- * @addtogroup GPS
- * @{
- */
 
 typedef struct {
-  char time[15];
-  float latitude;
-  char ns;
   float longitude;
-  char ew;
-  char altref[15];
+  float latitude;
   char navstat[2];
-} SAM_M10Q_Data;
+} GPS_Data;
+
 
 typedef struct SAM_M10Q {
   UART_t *uart;
   uint32_t baud;
-  SAM_M10Q_Data sampleData;
+  GPS_Data sampleData;
   void (*message)(struct SAM_M10Q *, char *);
-  void (*setBaud)(struct SAM_M10Q *gps, uint32_t baud);                         //!<
-  void (*pollPUBX)(struct SAM_M10Q *gps);                                       //!<
-  bool (*parsePUBX)(struct SAM_M10Q *gps, uint8_t *bytes, SAM_M10Q_Data *data); //!<
+  void (*setBaud)(struct SAM_M10Q *gps, uint32_t baud);
+  bool (*parse)(struct SAM_M10Q *gps);
 } SAM_M10Q_t;
 
 bool SAM_M10Q_init(SAM_M10Q_t *gps, UART_t *uart, uint32_t baud);
 void SAM_M10Q_setBaud(SAM_M10Q_t *gps, uint32_t baud);
-void SAM_M10Q_pollPUBX(SAM_M10Q_t *gps);
-bool SAM_M10Q_parsePUBX(SAM_M10Q_t *gps, uint8_t *bytes, SAM_M10Q_Data *data);
+bool SAM_M10Q_GLL_Parse(SAM_M10Q_t *gps);
 
 /** @} */
 #endif

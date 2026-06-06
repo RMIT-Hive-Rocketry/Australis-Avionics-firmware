@@ -319,7 +319,7 @@ bool initLora() {
 bool initUart() {
 
   UART_Config uartConfig      = UART_CONFIG_DEFAULT;
-  uartConfig.RXNEIE           = true; // Enable RXNE interrupt
+  //uartConfig.RXNEIE           = true; // Enable RXNE interrupt
 
   GPIO_Config uartTxPinConfig = GPIO_CONFIG_DEFAULT;
   uartTxPinConfig.mode        = GPIO_MODE_AF;

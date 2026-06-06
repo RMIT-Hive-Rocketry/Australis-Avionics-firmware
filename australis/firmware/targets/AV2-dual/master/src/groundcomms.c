@@ -34,7 +34,7 @@
 #include "broadcast_queue.h"
 
 static void sendGroundPacket1(uint8_t broadcastBegin);
-static void sendGroundPacket2(SAM_M10Q_Data *data);
+static void sendGroundPacket2(GPS_Data *data);
 
 /* =============================================================================== */
 /**
@@ -134,6 +134,7 @@ void vGroundCommStateMachine(void *argument) {
     }
   }
 }
+
 
 /* =============================================================================== */
 /**
@@ -239,7 +240,7 @@ void sendGroundPacket1(uint8_t broadcastBegin) {
  *
  **
  * =============================================================================== */
-void sendGroundPacket2(SAM_M10Q_Data *data) {
+void sendGroundPacket2(GPS_Data *data) {
 
   LoRa_Message_t message;
   message.length = 28;

@@ -24,6 +24,9 @@
 
 #include "flashwrite.h"
 
+#include "sam_m10q.h"
+#include "devicelist.h"
+
 void vHeartbeatBlink(void *argument) {
   (void)argument;
 
@@ -132,6 +135,21 @@ void vAerobrakesSendData(void *argument) {
 }
 
 
+
+void vGPS_Aquire(void *argument) {
+
+  SAM_M10Q_t* gps = DeviceList_getDeviceHandle(DEVICE_GPS).device;
+
+  while (1)
+    {
+
+      gps->parse(gps);
+
+    }
+    
+}
+
+
 /* ============================================================================================== */
 /**
  * @brief Initialise and store FreeRTOS task handles not handled by the Australis core.
@@ -157,6 +175,9 @@ bool initTasks(void) {
   xTaskCreate(vEnableInterrupts, "interrupts", 128, NULL, tskIDLE_PRIORITY, &interruptTaskHandle);
 
   xTaskCreate(vFlashBuffer, "interrupts", 256, NULL, tskIDLE_PRIORITY + 1, TaskList_new());
+
+  xTaskCreate(vGPS_Aquire, "interrupts", 512, NULL, tskIDLE_PRIORITY + 2, TaskList_new());
+
 
   return true;
 }
