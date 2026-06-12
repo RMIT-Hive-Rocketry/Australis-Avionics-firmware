@@ -18,6 +18,7 @@
 #include "groundcomms.h"
 #include "statelogic.h"
 #include "state.h"
+#include "packet.h"
 
 #include "can.h"
 #include "canpub.h"
@@ -150,6 +151,47 @@ void vGPS_Aquire(void *argument) {
 }
 
 
+
+void vBroadcastCallsign(void *argument) {
+
+  const size_t packetLength = 1;
+  const size_t packetSize   = 31;
+
+  char* callsign = "KR4MFM";
+  
+  LoRa_Message_t message;
+  message.length  = 1 + packetSize;
+  message.data[0] = packetSize;
+
+  {
+    // --- Construct Packet ---
+    Packet packet =
+      {
+        .id     = 0x08,
+        .length = packetLength,
+        .fields = (Field[]){
+          {// [0] Flight State
+           .size = 6,
+           .data = (uint8_t *)&(callsign)
+          },
+        }
+      };
+    
+    // Construct byte array from packet structure
+    Packet_asBytes(&packet, &message.data[0], packetSize);
+  }
+
+  for (;;)
+    {
+      // Send packet comment to LoRa author
+      xQueueSend(Queue_LoRa_Transmit, &message, 0);
+
+      // Every five minutes, send our callsign.
+      vTaskDelay(pdMS_TO_TICKS(1000*60*5));
+    }
+}
+
+
 /* ============================================================================================== */
 /**
  * @brief Initialise and store FreeRTOS task handles not handled by the Australis core.
@@ -174,9 +216,12 @@ bool initTasks(void) {
   TaskHandle_t interruptTaskHandle;
   xTaskCreate(vEnableInterrupts, "interrupts", 128, NULL, tskIDLE_PRIORITY, &interruptTaskHandle);
 
-  xTaskCreate(vFlashBuffer, "interrupts", 256, NULL, tskIDLE_PRIORITY + 1, TaskList_new());
+  xTaskCreate(vFlashBuffer, "Flash Buffer", 256, NULL, tskIDLE_PRIORITY + 1, TaskList_new());
 
-  xTaskCreate(vGPS_Aquire, "interrupts", 512, NULL, tskIDLE_PRIORITY + 2, TaskList_new());
+  xTaskCreate(vBroadcastCallsign, "Callsign Broadcast", 256, NULL, tskIDLE_PRIORITY + 1, TaskList_new());
+
+    
+  // xTaskCreate(vGPS_Aquire, "interrupts", 512, NULL, tskIDLE_PRIORITY + 2, TaskList_new());
 
 
   return true;

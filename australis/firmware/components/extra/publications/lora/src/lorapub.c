@@ -140,7 +140,7 @@ void vLoRaTransmit(void *argument) {
       continue;
 
     // Wait to receive message to transmit
-    BaseType_t result = xQueueReceive(Queue_LoRa_Transmit, &txData, portMAX_DELAY);
+    BaseType_t result = xQueueReceive(Queue_LoRa_Transmit, &txData, 0);
 
     // Transmit data if successfully retrieved from queue
     if (result == pdTRUE) {

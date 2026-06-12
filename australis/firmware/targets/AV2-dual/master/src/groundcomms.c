@@ -157,8 +157,7 @@ void sendGroundPacket1(uint8_t broadcastBegin) {
   const size_t packetSize   = 32;
 
   LoRa_Message_t message;
-  message.length  = 1 + packetSize;
-  message.data[0] = packetSize;
+  message.length  = packetLength;
 
   uint8_t stateFlags = (state->flightState << 5);
 
