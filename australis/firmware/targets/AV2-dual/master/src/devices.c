@@ -18,6 +18,7 @@
 // Device includes
 #include "a3g4250d.h"
 #include "bmp581.h"
+#include "bmp581_dummy.h"
 #include "kx134_1211.h"
 #include "sam_m10q.h"
 #include "w25q128.h"
@@ -143,7 +144,8 @@ bool initSensors() {
 
   GPIOpin_t baroCS = GPIOpin_init(BARO_CS, NULL);
   static BMP581_t baro;
-  BMP581_init(
+  //BMP581_init(
+  BMP581_dummy_init(
     &baro,
     &spiSensors,
     baroCS,

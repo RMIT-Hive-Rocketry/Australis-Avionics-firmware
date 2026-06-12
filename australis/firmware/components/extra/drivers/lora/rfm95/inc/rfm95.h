@@ -24,16 +24,17 @@
 
 #define RFM95_REG_RX_BYTES                  0x13
 
-#define RFM95_REG_DIO_MAPPING1              0x40
-#define RFM95_DIO_MAPPING_DIO0_Pos          0x06
-#define RFM95_DIO_MAPPING_DIO1_Pos          0x04
-#define RFM95_DIO_MAPPING_DIO2_Pos          0x02
-#define RFM95_DIO_MAPPING_DIO3_Pos          0x00
-#define RFM95_DIO_MAPPING_DIO4_Pos          0x06
-#define RFM95_DIO_MAPPING_DIO5_Pos          0x04
+// #define RFM95_REG_DIO_MAPPING1              0x40
+// #define RFM95_DIO_MAPPING_DIO0_Pos          0x06
+// #define RFM95_DIO_MAPPING_DIO1_Pos          0x04
+// #define RFM95_DIO_MAPPING_DIO2_Pos          0x02
+// #define RFM95_DIO_MAPPING_DIO3_Pos          0x00
+// #define RFM95_REG_DIO_MAPPING2              0x41
+// #define RFM95_DIO_MAPPING_DIO4_Pos          0x06
+// #define RFM95_DIO_MAPPING_DIO5_Pos          0x04
 
-#define RFM95_LORA_DIO_RXDONE               0x00 << RFM95_DIO_MAPPING_DIO0_Pos
-#define RFM95_LORA_DIO_TXDONE               0x01 << RFM95_DIO_MAPPING_DIO0_Pos
+// #define RFM95_LORA_DIO_RXDONE               0x00 << RFM95_DIO_MAPPING_DIO0_Pos
+// #define RFM95_LORA_DIO_TXDONE               0x01 << RFM95_DIO_MAPPING_DIO0_Pos
 
 #define RFM95_REG_IRQ_FLAGS_MASK            0x11
 #define RFM95_REG_IRQ_FLAGS                 0x12
@@ -58,9 +59,11 @@
 #define RFM95_MODEM_CONFIG1_CR_Pos          0x01
 
 #define RFM95_REG_MODEM_CONFIG2             0x1E
-#define RFM95_MODEM_CONFIG2_CRC_ON          0x04
-#define RFM95_MODEM_CONFIG2_AGC_AUTO_ON     0x04
 #define RFM95_MODEM_CONFIG2_SF_Pos          0x04
+#define RFM95_MODEM_CONFIG2_CRC_ON          0x04
+
+#define RFM05_REG_MODEM_CONFIG3             0x26
+#define RFM95_MODEM_CONFIG2_AGC_AUTO_ON     0x04
 
 #define RFM95_REG_PA_CONFIG                 0x09
 #define RFM95_PA_SELECT                     0x80
@@ -78,19 +81,19 @@
 
 #define RFM95_CONFIG_DEFAULT         \
   (RFM95_Config) {                   \
-    .freq             = 915.0f,     \
+    .freq             = 445.88f,     \
     .bw               = RFM95_BW500, \
     .sf               = RFM95_SF9,   \
     .cr               = RFM95_CR5,   \
     .implicitHeader   = false,      \
-    .crc              = false,      \
+    .crc              = true,      \
     .paSelect         = true,       \
     .outputPower      = 0x0F,       \
     .ocp              = true,       \
     .ocpTrim          = 0x1B,       \
     .rxFifoBaseAddr   = 0x00,       \
     .txFifoBaseAddr   = 0x00,       \
-    .maxPayloadLength = 0x20        \
+    .maxPayloadLength = 0x40        \
   }
 // clang-format on
 

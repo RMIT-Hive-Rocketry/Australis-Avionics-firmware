@@ -1,4 +1,4 @@
-set(MODULE_NAME Australis-extra_bmp581)
+set(MODULE_NAME Australis-extra_bmp581_dummy)
 
 # ╔══════════════════════════════════════════════════════════╗
 # ║                         SOURCES                          ║
@@ -7,7 +7,7 @@ set(MODULE_NAME Australis-extra_bmp581)
 add_library(${MODULE_NAME} OBJECT)
 target_sources(${MODULE_NAME}
   PRIVATE
-    src/bmp581.c
+    src/bmp581_dummy.c
 )
 
 # ╔══════════════════════════════════════════════════════════╗
@@ -17,4 +17,5 @@ target_sources(${MODULE_NAME}
 target_include_directories(${MODULE_NAME}
   PUBLIC
     inc/
+    ../bmp581/inc/
 )

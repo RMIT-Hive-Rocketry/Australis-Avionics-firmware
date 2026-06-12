@@ -13,6 +13,7 @@ build_australis_variant(
     "drivers/sensors/accel/kx134_1211"
     "drivers/sensors/gyro/a3g4250d"
     "drivers/sensors/baro/bmp581"
+    "drivers/sensors/baro/bmp581_dummy"
     "drivers/flash/w25q128"
     "drivers/lora/sx1272"
     "drivers/lora/rfm95"

@@ -106,8 +106,11 @@ static void _RFM95_init(RFM95_t *lora, RFM95_Config *config) {
   );
   /* clang-format on */
 
-  RFM95_writeRegister(lora, RFM95_REG_PA_DAC, 0x87);
-
+  // Enable +20dBm on PA_BOOST if it's on.
+  if (config->paSelect) {
+    RFM95_writeRegister(lora, RFM95_REG_PA_DAC, 0x07);
+  }
+  
   // Set mode to standby
   //_RFM95_setMode(lora, RFM95_MODE_STDBY);
 }
@@ -177,10 +180,11 @@ void RFM95_transmit(LoRa_t *lora, uint8_t *pointerdata, uint8_t length) {
   // Set payload length
   RFM95_writeRegister(driver, RFM95_REG_PAYLOAD_LENGTH, length);
 
+  // TODO: There is no DIO IRQ flags...
   // TODO: add in proper read-mask-write operation for setting DIO mapping
   //
   // Set DIO interrupt pin to TxDone
-  RFM95_writeRegister(driver, RFM95_REG_DIO_MAPPING1, RFM95_LORA_DIO_TXDONE);
+  // RFM95_writeRegister(driver, RFM95_REG_DIO_MAPPING1, RFM95_LORA_DIO_TXDONE);
 
   // Since the device will only ever be transmitting or receiving at any given time
   // and each packet should be handled immediately by the implementation (no waiting
@@ -192,8 +196,8 @@ void RFM95_transmit(LoRa_t *lora, uint8_t *pointerdata, uint8_t length) {
   // Think of a more elegant solution for applications that might use this
   // driver that want buffered data
   //
-  // Clear IRQ flags and set FIFO address pointer.
 
+  // Clear IRQ flags and set FIFO address pointer.
   RFM95_writeRegister(driver, RFM95_REG_IRQ_FLAGS, RFM95_LORA_IRQ_TXDONE); // clears the IRQ flag
   RFM95_writeRegister(driver, RFM95_REG_FIFO_ADDR_PTR, 0x00);              // set pointer adddress to start
   // Load data into transmit FIFO
@@ -221,7 +225,7 @@ void RFM95_startReceive(LoRa_t *lora) {
   // TODO: add in proper read-mask-write operation for setting DIO mapping
   //
   // Set DIO interrupt pin to RxDone
-  RFM95_writeRegister(driver, RFM95_REG_DIO_MAPPING1, RFM95_LORA_DIO_RXDONE);
+  // RFM95_writeRegister(driver, RFM95_REG_DIO_MAPPING1, RFM95_LORA_DIO_RXDONE);
 
   // Since the device will only ever be transmitting or receiving at any given time
   // and each packet should be handled immediately by the implementation (no waiting
