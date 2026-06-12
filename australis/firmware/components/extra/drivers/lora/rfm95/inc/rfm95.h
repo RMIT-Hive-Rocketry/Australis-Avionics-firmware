@@ -24,17 +24,17 @@
 
 #define RFM95_REG_RX_BYTES                  0x13
 
-// #define RFM95_REG_DIO_MAPPING1              0x40
-// #define RFM95_DIO_MAPPING_DIO0_Pos          0x06
-// #define RFM95_DIO_MAPPING_DIO1_Pos          0x04
-// #define RFM95_DIO_MAPPING_DIO2_Pos          0x02
-// #define RFM95_DIO_MAPPING_DIO3_Pos          0x00
-// #define RFM95_REG_DIO_MAPPING2              0x41
-// #define RFM95_DIO_MAPPING_DIO4_Pos          0x06
-// #define RFM95_DIO_MAPPING_DIO5_Pos          0x04
+#define RFM95_REG_DIO_MAPPING1              0x40
+#define RFM95_DIO_MAPPING_DIO0_Pos          0x06
+#define RFM95_DIO_MAPPING_DIO1_Pos          0x04
+#define RFM95_DIO_MAPPING_DIO2_Pos          0x02
+#define RFM95_DIO_MAPPING_DIO3_Pos          0x00
+#define RFM95_REG_DIO_MAPPING2              0x41
+#define RFM95_DIO_MAPPING_DIO4_Pos          0x06
+#define RFM95_DIO_MAPPING_DIO5_Pos          0x04
 
-// #define RFM95_LORA_DIO_RXDONE               0x00 << RFM95_DIO_MAPPING_DIO0_Pos
-// #define RFM95_LORA_DIO_TXDONE               0x01 << RFM95_DIO_MAPPING_DIO0_Pos
+#define RFM95_LORA_DIO_RXDONE               0x00 << RFM95_DIO_MAPPING_DIO0_Pos
+#define RFM95_LORA_DIO_TXDONE               0x01 << RFM95_DIO_MAPPING_DIO0_Pos
 
 #define RFM95_REG_IRQ_FLAGS_MASK            0x11
 #define RFM95_REG_IRQ_FLAGS                 0x12

@@ -180,11 +180,10 @@ void RFM95_transmit(LoRa_t *lora, uint8_t *pointerdata, uint8_t length) {
   // Set payload length
   RFM95_writeRegister(driver, RFM95_REG_PAYLOAD_LENGTH, length);
 
-  // TODO: There is no DIO IRQ flags...
   // TODO: add in proper read-mask-write operation for setting DIO mapping
   //
   // Set DIO interrupt pin to TxDone
-  // RFM95_writeRegister(driver, RFM95_REG_DIO_MAPPING1, RFM95_LORA_DIO_TXDONE);
+  RFM95_writeRegister(driver, RFM95_REG_DIO_MAPPING1, RFM95_LORA_DIO_TXDONE);
 
   // Since the device will only ever be transmitting or receiving at any given time
   // and each packet should be handled immediately by the implementation (no waiting
@@ -225,7 +224,7 @@ void RFM95_startReceive(LoRa_t *lora) {
   // TODO: add in proper read-mask-write operation for setting DIO mapping
   //
   // Set DIO interrupt pin to RxDone
-  // RFM95_writeRegister(driver, RFM95_REG_DIO_MAPPING1, RFM95_LORA_DIO_RXDONE);
+  RFM95_writeRegister(driver, RFM95_REG_DIO_MAPPING1, RFM95_LORA_DIO_RXDONE);
 
   // Since the device will only ever be transmitting or receiving at any given time
   // and each packet should be handled immediately by the implementation (no waiting
