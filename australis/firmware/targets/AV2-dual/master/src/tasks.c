@@ -66,8 +66,8 @@ void vEnableInterrupts(void *argument) {
   NVIC_EnableIRQ(EXTI1_IRQn);
   //NVIC_SetPriority(USART1_IRQn, 10);
   //NVIC_EnableIRQ(USART1_IRQn);
-  //NVIC_SetPriority(USART3_IRQn, 11);
-  //NVIC_EnableIRQ(USART3_IRQn);
+  NVIC_SetPriority(USART3_IRQn, 11);
+  NVIC_EnableIRQ(USART3_IRQn);
   EXTI->RTSR        |= 0x02;
   EXTI->IMR         |= 0x02;
   SYSCFG->EXTICR[0] &= ~0xF0;
@@ -94,6 +94,13 @@ void USART1_IRQHandler(void *argument) {
 
   pubShellRxInterrupt();
 }
+
+void USART3_IRQHandler(void *argument) {
+  (void)argument;
+
+  SAM_M10Q_UART_Interrupt();
+}
+
 
 
 void vAerobrakesSendData(void *argument) {
@@ -140,12 +147,13 @@ void vAerobrakesSendData(void *argument) {
 void vGPS_Aquire(void *argument) {
 
   SAM_M10Q_t* gps = DeviceList_getDeviceHandle(DEVICE_GPS).device;
-
+  gps->taskHandle = xTaskGetCurrentTaskHandle();
+  
   while (1)
-    {
-
+    {      
+      // Await a notification.
+      xTaskNotifyWait(0,0,NULL,portMAX_DELAY);
       gps->parse(gps);
-
     }
     
 }
@@ -221,7 +229,7 @@ bool initTasks(void) {
   xTaskCreate(vBroadcastCallsign, "Callsign Broadcast", 256, NULL, tskIDLE_PRIORITY + 1, TaskList_new());
 
     
-  // xTaskCreate(vGPS_Aquire, "interrupts", 512, NULL, tskIDLE_PRIORITY + 2, TaskList_new());
+  xTaskCreate(vGPS_Aquire, "GPS Acquire", 512, NULL, tskIDLE_PRIORITY + 2, TaskList_new());
 
 
   return true;

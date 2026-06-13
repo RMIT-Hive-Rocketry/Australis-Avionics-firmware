@@ -47,7 +47,7 @@
     .PEIE   = false,                \
     .TXEIE  = false,                \
     .TCIE   = false,                \
-    .RXNEIE = false,                \
+    .RXNEIE = true,                 \
     .IDLEIE = false,                \
     .TE     = true,                 \
     .RE     = true,                 \
@@ -134,12 +134,19 @@ typedef struct UART {
   UART_Config config;
   uint32_t baud;
   UART_OversampleMode over8;
+
+  uint8_t buffer[256];
+  // Between the head and tail indices is data which has not been sent.
+  // Head is less than or equal to tail, always.
+  uint8_t buffer_tail;
+  uint8_t buffer_head;
+  
   void (*setBaud)(struct UART *, uint32_t);
   void (*send)(struct UART *, uint8_t);             //!< UART send method.   	             @see UART_send
   void (*sendBytes)(struct UART *, uint8_t *, int); //!< UART send multiple bytes method.  @see UART_sendBytes
   void (*print)(struct UART *, char *);             //!< UART print string method.  			 @see UART_print
   void (*println)(struct UART *, char *);           //!< UART print line method.  			 @see UART_print
-  uint8_t (*receive)(struct UART *);                //!< UART receive method.              @see UART_receive
+  bool (*receive)(struct UART *, uint8_t*);                //!< UART receive method.              @see UART_receive
 } UART_t;
 
 UART_t UART_init(USART_TypeDef *interface, uint32_t baud, UART_Config *config);
@@ -151,7 +158,10 @@ void UART_send(UART_t *, uint8_t data);
 void UART_sendBytes(UART_t *, uint8_t *data, int length);
 void UART_print(UART_t *, char *data);
 void UART_println(UART_t *, char *data);
-uint8_t UART_receive(UART_t *);
+bool UART_receive(UART_t *, uint8_t*);
+
+
+void USART_Generic_IRQHandler(UART_t*);
 
 /** @} */
 #endif

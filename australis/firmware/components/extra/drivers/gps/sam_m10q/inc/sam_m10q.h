@@ -15,6 +15,9 @@
 #include "stdbool.h"
 #include "uart.h"
 
+#include "FreeRTOS.h"
+#include "task.h"
+
 #define GPS_PUBX_SILENCE                                                       \
   "$PUBX,40,GLL,0,0,0,0,0,0*5C\r\n$PUBX,40,RMC,0,0,0,0,0,0*47\r\n$PUBX,40,"    \
   "GSA,0,0,0,0,0,0*4E\r\n$PUBX,40,GSV,0,0,0,0,0,0*59\r\n$PUBX,40,GGA,0,0,0,0," \
@@ -47,11 +50,15 @@ typedef struct SAM_M10Q {
   void (*message)(struct SAM_M10Q *, char *);
   void (*setBaud)(struct SAM_M10Q *gps, uint32_t baud);
   bool (*parse)(struct SAM_M10Q *gps);
+  TaskHandle_t taskHandle;
 } SAM_M10Q_t;
+
+
+void SAM_M10Q_UART_Interrupt(void);
 
 bool SAM_M10Q_init(SAM_M10Q_t *gps, UART_t *uart, uint32_t baud);
 void SAM_M10Q_setBaud(SAM_M10Q_t *gps, uint32_t baud);
-bool SAM_M10Q_GLL_Parse(SAM_M10Q_t *gps);
+bool SAM_M10Q_Parse(SAM_M10Q_t *gps);
 
 /** @} */
 #endif

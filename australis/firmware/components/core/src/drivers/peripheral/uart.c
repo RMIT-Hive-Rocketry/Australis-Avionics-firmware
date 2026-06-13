@@ -189,10 +189,13 @@ void UART_println(UART_t *uart, char *data) {
  * @return       The received byte of data.
  **
  * =============================================================================== */
-uint8_t UART_receive(UART_t *uart) {
-  USART_TypeDef *interface = uart->interface;
-  while ((interface->SR & USART_SR_RXNE) == 0);
-  return (uint8_t)(interface->DR & 0xFF);
+bool UART_receive(UART_t *uart, uint8_t* data) {
+  if (uart->buffer_head != uart->buffer_tail) {
+    *data = uart->buffer[uart->buffer_head++];
+    return true;
+  } else {
+    return false;
+  }
 }
 
 /* =============================================================================== */
@@ -218,4 +221,23 @@ void UART_updateConfig(UART_t *uart, UART_Config *config) {
 
   // Initialise SPI registers and enable peripheral
   _UART_init(uart, uart->baud, config);
+}
+
+
+// This function should be called by all USART IRQ functions.
+void USART_Generic_IRQHandler(UART_t* uart) {
+
+  if (uart->interface->SR & USART_SR_RXNE) {
+
+    // TODO: Handle alternative word sizes and parity.
+    uint8_t data = (uint8_t) (uart->interface->DR & 0xFF);
+
+    // Grab from buffer, then clear IRQ.
+    uart->buffer[uart->buffer_tail++] = data;
+    uart->interface->SR &= ~USART_SR_RXNE;
+  }
+  //else if (uart->interface->SR & USART_SR_TXNE) {
+  //TODO: Don't need this case yet, but in future, add a tx buffer.
+  //}
+
 }
