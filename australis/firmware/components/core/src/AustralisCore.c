@@ -69,7 +69,9 @@ void Australis_init() {
 
 #if (coreTASK_ENABLE == 1)
   xTaskCreate(vHDataAcquisition, "HDataAcq", 512, NULL, configMAX_PRIORITIES - 2, TaskList_new());
-  xTaskCreate(vLDataAcquisition, "LDataAcq", 512, NULL, configMAX_PRIORITIES - 3, TaskList_new());
+  //TODO: revert the change of the next two lines.
+  //xTaskCreate(vLDataAcquisition, "LDataAcq", 512, NULL, configMAX_PRIORITIES - 3, TaskList_new());
+  xTaskCreate(vLDataAcquisition_BrokenBarometer, "LDataAcq", 512, NULL, configMAX_PRIORITIES - 3, TaskList_new());
   xTaskCreate(vStateUpdate, "StateUpdate", 512, NULL, configMAX_PRIORITIES - 4, TaskList_new());
 
 #if coreFLASH_ENABLE == 1
