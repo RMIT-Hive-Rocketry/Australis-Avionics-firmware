@@ -23,9 +23,11 @@ References
 #include "string.h"
 #include "stdio.h"
 #include "stdlib.h"
+#include "math.h"
 
 #include "uart.h"
 #include "devicelist.h"
+#include "state.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -96,17 +98,21 @@ typedef enum {
 
 
 
-
+//(field0[1] == 'P' || field0[1] == 'L' || field0[1] == 'A' || field0[1] == 'B' || \
+//               field0[1] == 'I' || field0[1] == 'Q' || field0[1] == 'N')) {
+                 
 static bool SAM_M10Q_Parse_GLL(SAM_M10Q_t *gps, char* data);
+static bool SAM_M10Q_Parse_GGA(SAM_M10Q_t *gps, char* data);
+
 
 bool SAM_M10Q_Parse(SAM_M10Q_t *gps) {
   static SAM_M10Q_Parse__States_t state = SMS_Idle;
   char byte;
   static char    field0[6];
   static uint8_t field0_i;
-  static char    data[64];
+  static char    data[96];
   static uint8_t data_i;
-
+  
   bool data_ready = false;
 
   
@@ -138,9 +144,8 @@ bool SAM_M10Q_Parse(SAM_M10Q_t *gps) {
         if (field0_i > 5) {
           // If this is a GLL message, proceed, otherwise return to idle state.
           // Refer to [1, pp.18] for field[1] comparisons
-          if ((field0[0] == 'G') && (field0[2] == 'G') && (field0[3] == 'L') && (field0[4] == 'L') &&
-              (field0[1] == 'P' || field0[1] == 'L' || field0[1] == 'A' || field0[1] == 'B' || \
-               field0[1] == 'I' || field0[1] == 'Q' || field0[1] == 'N')) {
+          if ( ((field0[0] == 'G') && (field0[2] == 'G') && (field0[3] == 'L') && (field0[4] == 'L')) ||
+               ((field0[0] == 'G') && (field0[2] == 'G') && (field0[3] == 'G') && (field0[4] == 'A')) ) {
             state = SMS_Data;
             data_i = 0;
           } else {
@@ -170,7 +175,14 @@ bool SAM_M10Q_Parse(SAM_M10Q_t *gps) {
   
   
   if (state == SMS_Transmission_Complete) {
-    data_ready = SAM_M10Q_Parse_GLL(gps, data);
+    
+    if ((field0[0] == 'G') && (field0[2] == 'G') && (field0[3] == 'L') && (field0[4] == 'L')) {
+      data_ready = SAM_M10Q_Parse_GLL(gps, data);
+    }
+    else if ((field0[0] == 'G') && (field0[2] == 'G') && (field0[3] == 'G') && (field0[4] == 'A')) {
+      data_ready = SAM_M10Q_Parse_GGA(gps, data);
+    }
+    
     state = SMS_Idle;
   }
 
@@ -252,6 +264,42 @@ static bool SAM_M10Q_Parse_GLL(SAM_M10Q_t *gps, char* data) {
   return true;
 }
 
+
+
+static bool SAM_M10Q_Parse_GGA(SAM_M10Q_t *gps, char* data) {
+  char* s_alt = &data[47];
+
+  // Find where the decimal place is.
+  uint8_t dot = 0;
+  while (s_alt[dot] != '.') {
+    dot++;
+  }
+
+  // Extract the mantissa and fractional components.
+  uint32_t alt_mantissa = 0;
+  uint32_t mul = pow(10, dot-1);
+  for (uint8_t i = 0; i < dot; i++) {
+    alt_mantissa += ((s_alt[i]-'0') * mul);
+    mul /= 10;
+  }
+
+  float alt_fraction = ((float)(s_alt[dot+1]-'0')) * 0.1f;
+
+  // Update state with the altitude reading.
+
+  static float altitude_initial;  
+  float altitude = ((float)(alt_mantissa)) + alt_fraction;
+  State* state = State_getState();
+
+  // Altitude is distance from ground, not from sea level (given by the SAM M10Q
+  // GNSS chip).
+  if (altitude_initial < 0.1f) {
+    altitude_initial = altitude;
+  }
+
+  state->altitude = altitude - altitude_initial;
+  
+}
 
 /* ============================================================================================== */
 /**
