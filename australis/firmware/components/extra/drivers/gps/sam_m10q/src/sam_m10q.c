@@ -179,7 +179,8 @@ bool SAM_M10Q_Parse(SAM_M10Q_t *gps) {
     if ((field0[0] == 'G') && (field0[2] == 'G') && (field0[3] == 'L') && (field0[4] == 'L')) {
       data_ready = SAM_M10Q_Parse_GLL(gps, data);
     }
-    else if ((field0[0] == 'G') && (field0[2] == 'G') && (field0[3] == 'G') && (field0[4] == 'A')) {
+    // Exclude N from second field because it tends to report a maligned packet.
+    else if ((field0[0] == 'G') && (field0[1] != 'N') && (field0[2] == 'G') && (field0[3] == 'G') && (field0[4] == 'A')) {
       data_ready = SAM_M10Q_Parse_GGA(gps, data);
     }
     
@@ -267,6 +268,22 @@ static bool SAM_M10Q_Parse_GLL(SAM_M10Q_t *gps, char* data) {
 
 
 static bool SAM_M10Q_Parse_GGA(SAM_M10Q_t *gps, char* data) {
+
+  // First, check that the packet is actually populated, as the GNSS chip tends
+  // to send 'valid' packets that are full of nothing, in particular with GGA
+  // messages than others.
+  
+  for (uint8_t i = 2; (!(data[i-1] == '\r' && data[i] == '\n')); i++) {  
+
+    if (data[i-2] == data[i-1] == data[i] == ',') {
+      return false;
+    }
+    
+  }
+
+  
+
+  // Grab altitude
   char* s_alt = &data[47];
 
   // Find where the decimal place is.
