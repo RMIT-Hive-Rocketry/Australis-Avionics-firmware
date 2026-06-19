@@ -16,6 +16,9 @@
 #include "stddef.h"
 #include "stdint.h"
 
+#include "FreeRTOS.h"
+#include "queue.h"
+
 static void _RFM95_init(RFM95_t *, RFM95_Config *);
 static void RFM95_writeRegister(RFM95_t *, uint8_t, uint8_t);
 
@@ -63,7 +66,7 @@ static void _RFM95_init(RFM95_t *lora, RFM95_Config *config) {
 
   /* clang-format off */
   uint8_t opMode = RFM95_readRegister(lora, RFM95_REG_OP_MODE); 
-  RFM95_writeRegister(lora, RFM95_REG_OP_MODE, opMode | RFM95_OP_MODE_LONG_RANGE); 
+  RFM95_writeRegister(lora, RFM95_REG_OP_MODE, opMode | RFM95_OP_MODE_LONG_RANGE);
 
   _RFM95_setMode(lora, RFM95_MODE_STDBY);
 
@@ -93,6 +96,14 @@ static void _RFM95_init(RFM95_t *lora, RFM95_Config *config) {
   RFM95_writeRegister(lora, RFM95_REG_FIFO_TX_BASE_ADDR, config->txFifoBaseAddr); 
   RFM95_writeRegister(lora, RFM95_REG_FIFO_RX_BASE_ADDR, config->rxFifoBaseAddr); 
 
+  // Configure preamble lengths.
+  RFM95_writeRegister(lora, 0x20,  0); 
+  RFM95_writeRegister(lora, 0x21, 12); 
+
+  // Configure interrupt mask for TX/RX done.
+  RFM95_writeRegister(lora, RFM95_REG_IRQ_FLAGS_MASK,  0x48); 
+  
+  
   // Set over current protection configuration
   RFM95_writeRegister(lora, RFM95_REG_OCP,
     (config->ocp ? RFM95_OCP_ON : 0) // Enable/disable over current protection
@@ -112,7 +123,7 @@ static void _RFM95_init(RFM95_t *lora, RFM95_Config *config) {
   }
   
   // Set mode to standby
-  //_RFM95_setMode(lora, RFM95_MODE_STDBY);
+  _RFM95_setMode(lora, RFM95_MODE_RXCONTINUOUS);
 }
 
 /* ============================================================================================== */
@@ -174,11 +185,15 @@ void RFM95_standby(RFM95_t *lora) {
 void RFM95_transmit(LoRa_t *lora, uint8_t *pointerdata, uint8_t length) {
   RFM95_t *driver = (RFM95_t *)lora;
 
+  while (lora->currentMode == RFM95_MODE_TX) {
+    vTaskDelay(pdMS_TO_TICKS(10));
+  }
+  
   // Set device to standby
   _RFM95_setMode(driver, RFM95_MODE_STDBY);
 
   // Set payload length
-  RFM95_writeRegister(driver, RFM95_REG_PAYLOAD_LENGTH, length);
+  RFM95_writeRegister(driver, RFM95_REG_PAYLOAD_LENGTH, length+4);
 
   // TODO: add in proper read-mask-write operation for setting DIO mapping
   //
@@ -200,6 +215,9 @@ void RFM95_transmit(LoRa_t *lora, uint8_t *pointerdata, uint8_t length) {
   RFM95_writeRegister(driver, RFM95_REG_IRQ_FLAGS, RFM95_LORA_IRQ_TXDONE); // clears the IRQ flag
   RFM95_writeRegister(driver, RFM95_REG_FIFO_ADDR_PTR, 0x00);              // set pointer adddress to start
   // Load data into transmit FIFO
+  for (int i = 0; i < 4; i++) {
+    RFM95_writeRegister(driver, RFM95_REG_FIFO, 0xFF);
+  }
   for (int i = 0; i < length; i++) {
     RFM95_writeRegister(driver, RFM95_REG_FIFO, pointerdata[i]);
   }
@@ -268,9 +286,9 @@ uint8_t RFM95_readReceive(LoRa_t *lora, uint8_t *buffer, uint8_t buffSize) {
 
   // Clear the IRQ flag
   RFM95_writeRegister(driver, RFM95_REG_IRQ_FLAGS, RFM95_LORA_IRQ_RXDONE);
-
+ 
   // Read address and packet width information of received data
-  uint8_t bytesReceived = RFM95_readRegister(driver, RFM95_REG_RX_BYTES);          // Number of bytes received
+  uint8_t bytesReceived = RFM95_readRegister(driver, RFM95_REG_RX_BYTES) - 4;          // Number of bytes received
   uint8_t rxCurrentAddr = RFM95_readRegister(driver, RFM95_REG_FIFO_RX_CURR_ADDR); // Address of last packet
 
   // Return error if buffer is smaller than the received data
@@ -280,10 +298,18 @@ uint8_t RFM95_readReceive(LoRa_t *lora, uint8_t *buffer, uint8_t buffSize) {
 
   // Otherwise, set the address pointer and read each byte into buffer
   RFM95_writeRegister(driver, RFM95_REG_FIFO_ADDR_PTR, rxCurrentAddr);
+
+  // Burn first four bytes
+  for (int i = 0; i < 4; i++) {
+    RFM95_readRegister(driver, RFM95_REG_FIFO);
+  }
+
   for (int i = 0; i < bytesReceived; i++) {
     buffer[i] = RFM95_readRegister(driver, RFM95_REG_FIFO);
   }
 
+  RFM95_clearIRQ(lora, 0xFF);
+  
   return bytesReceived;
 }
 
@@ -294,7 +320,7 @@ uint8_t RFM95_readReceive(LoRa_t *lora, uint8_t *buffer, uint8_t buffSize) {
  *
  * @param  lora  Pointer to RFM95 struct.
  * @param  flags 8-bit value representing flag bits to be set.
- *
+  *
  * @return @c NULL
  **
  * ============================================================================================== */
@@ -322,7 +348,7 @@ bool RFM95_updateConfig(RFM95_t *lora, RFM95_Config *config) {
   if (config->outputPower > 0x0F || config->ocpTrim > 0x1F) {
     return false;
   }
-
+  
   // Update peripheral with new config
   lora->config = *config;
 
@@ -369,5 +395,8 @@ void RFM95_writeRegister(RFM95_t *lora, uint8_t address, uint8_t data) {
   // Set CS high
   cs.set(&cs);
 }
+
+
+
 
 /** @} */

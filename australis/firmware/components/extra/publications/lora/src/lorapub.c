@@ -87,8 +87,10 @@ void PubLora_handleInterrupt(InterruptContext *interruptContext) {
   if (transceiver->currentMode == LORA_MODE_TX) {
     // Finished transmitting, return to receive mode
     transceiver->startReceive(transceiver);
+    activeHandle = vLoRaTransmitHandle;
   } else if (transceiver->currentMode == LORA_MODE_RX) {
-    queueAcquisition(topic);
+    // queueAcquisition(topic);
+    activeHandle = vLoRaReceiveHandle;
   }
 
   // Notify active task for unblock
@@ -126,7 +128,8 @@ void loraPub_setRfToggle(GPIOpin_t *rfToggle_) {
  * ============================================================================================== */
 void vLoRaTransmit(void *argument) {
 
-  const TickType_t blockTime = portMAX_DELAY;
+  //const TickType_t blockTime = portMAX_DELAY;
+  const TickType_t blockTime = pdMS_TO_TICKS(500);
 
   vLoRaTransmitHandle = xTaskGetCurrentTaskHandle();
 
@@ -181,7 +184,8 @@ void vLoRaTransmit(void *argument) {
  * ============================================================================================== */
 void vLoRaReceive(void *argument) {
 
-  const TickType_t blockTime = portMAX_DELAY;
+  //const TickType_t blockTime = portMAX_DELAY;
+  const TickType_t blockTime = pdMS_TO_TICKS(10);
 
   vLoRaReceiveHandle = xTaskGetCurrentTaskHandle();
 
@@ -203,8 +207,6 @@ void vLoRaReceive(void *argument) {
     // Publish packet data to topic
     if (rxData.length > 0) {
       Broadcast_Queue_Broadcast(&BQueue_LoRa_Received, &rxData.data);
-    } else {
-      vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(20));
     }
   }
 }
@@ -240,6 +242,7 @@ void loraPub_interrupt(void) {
 
   // Notify active task for unblock
   xTaskNotifyIndexedFromISR(activeHandle, 1, 0, eNoAction, &xHigherPriorityTaskWoken);
+
   portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 
  LORA_NOT_READY:

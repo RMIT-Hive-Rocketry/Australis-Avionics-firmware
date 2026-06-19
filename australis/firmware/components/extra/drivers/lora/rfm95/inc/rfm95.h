@@ -85,15 +85,15 @@
     .bw               = RFM95_BW500, \
     .sf               = RFM95_SF9,   \
     .cr               = RFM95_CR5,   \
-    .implicitHeader   = false,      \
-    .crc              = true,      \
-    .paSelect         = true,       \
-    .outputPower      = 0x0F,       \
-    .ocp              = true,       \
-    .ocpTrim          = 0x1B,       \
-    .rxFifoBaseAddr   = 0x00,       \
-    .txFifoBaseAddr   = 0x00,       \
-    .maxPayloadLength = 0x40        \
+    .implicitHeader   = false,       \
+    .crc              = true,        \
+    .paSelect         = true,        \
+    .outputPower      = 0x0A,        \
+    .ocp              = true,        \
+    .ocpTrim          = 0x1B,        \
+    .rxFifoBaseAddr   = 0x00,        \
+    .txFifoBaseAddr   = 0x00,        \
+    .maxPayloadLength = 0x60         \
   }
 // clang-format on
 
@@ -109,9 +109,10 @@
  * @details Describes the occupied signal bandwidth
  */
 typedef enum {
-  RFM95_BW125, // 125kHz
-  RFM95_BW250, // 250kHz
-  RFM95_BW500, // 500kHz
+  RFM95_BW62_5 = 0x6, // 62.5kHz
+  RFM95_BW125  = 0x7, // 125kHz
+  RFM95_BW250  = 0x8, // 250kHz
+  RFM95_BW500  = 0x9, // 500kHz
 } RFM95_Bandwidth;
 
 /**
@@ -125,7 +126,7 @@ typedef enum {
   RFM95_CR7,     // 4/7
   RFM95_CR8,     // 4/8
 } RFM95_CodingRate;
-
+ 
 /**
  * @brief   RFM95 spreading factor enum
  * @details Describes the LoRa spreading factor

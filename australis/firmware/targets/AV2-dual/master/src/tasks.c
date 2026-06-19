@@ -71,7 +71,7 @@ void vEnableInterrupts(void *argument) {
   EXTI->RTSR        |= 0x02;
   EXTI->IMR         |= 0x02;
   SYSCFG->EXTICR[0] &= ~0xF0;
-  SYSCFG->EXTICR[0]  = 0x30;
+  SYSCFG->EXTICR[0] |= 0x30;
   __enable_irq();
 
   // Task deletion is causing exit to WWDG.
@@ -85,8 +85,8 @@ void vEnableInterrupts(void *argument) {
 void EXTI1_IRQHandler(void *argument) {
   (void)argument;
 
-  EXTI->PR |= (0x02);
   loraPub_interrupt();
+  EXTI->PR |= (0x02);
 }
 
 void USART1_IRQHandler(void *argument) {
@@ -161,41 +161,18 @@ void vGPS_Aquire(void *argument) {
 
 
 void vBroadcastCallsign(void *argument) {
-
-  const size_t packetLength = 1;
-  const size_t packetSize   = 31;
-
-  char* callsign = "KR4MFM";
   
   LoRa_Message_t message;
-  message.length  = 1 + packetSize;
-  message.data[0] = packetSize;
-
-  {
-    // --- Construct Packet ---
-    Packet packet =
-      {
-        .id     = 0x08,
-        .length = packetLength,
-        .fields = (Field[]){
-          {// [0] Flight State
-           .size = 6,
-           .data = (uint8_t *)&(callsign)
-          },
-        }
-      };
-    
-    // Construct byte array from packet structure
-    Packet_asBytes(&packet, &message.data[0], packetSize);
-  }
+  message.length = 6;
+  memcpy(message.data, "KR4MFM", 6);
 
   for (;;)
     {
       // Send packet comment to LoRa author
       xQueueSend(Queue_LoRa_Transmit, &message, 0);
 
-      // Every five minutes, send our callsign.
-      vTaskDelay(pdMS_TO_TICKS(1000*60*5));
+      // Every minute, send our callsign.
+      vTaskDelay(pdMS_TO_TICKS(1000*60));
     }
 }
 
@@ -218,11 +195,11 @@ bool initTasks(void) {
   xTaskCreate(vLoRaReceive, "LoraRx", 256, NULL, configMAX_PRIORITIES - 5, TaskList_new());
   xTaskCreate(vShellProcess, "ShellProcess", 256, NULL, configMAX_PRIORITIES - 6, TaskList_new());
 
-  xTaskCreate(vAerobrakesSendData, "AerobrakesData", 256, NULL, configMAX_PRIORITIES - 1, TaskList_new());
-  xTaskCreate(vCanTransmit, "CAN Transmit", 256, NULL, configMAX_PRIORITIES - 1, TaskList_new());
+  // xTaskCreate(vAerobrakesSendData, "AerobrakesData", 256, NULL, configMAX_PRIORITIES - 1, TaskList_new());
+  // xTaskCreate(vCanTransmit, "CAN Transmit", 256, NULL, configMAX_PRIORITIES - 1, TaskList_new());
   
   TaskHandle_t interruptTaskHandle;
-  xTaskCreate(vEnableInterrupts, "interrupts", 128, NULL, tskIDLE_PRIORITY, &interruptTaskHandle);
+  xTaskCreate(vEnableInterrupts, "interrupts", 128, NULL, tskIDLE_PRIORITY + 1, &interruptTaskHandle);
 
   xTaskCreate(vFlashBuffer, "Flash Buffer", 256, NULL, tskIDLE_PRIORITY + 1, TaskList_new());
 

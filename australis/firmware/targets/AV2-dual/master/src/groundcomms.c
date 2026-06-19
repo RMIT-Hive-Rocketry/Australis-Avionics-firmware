@@ -32,6 +32,7 @@
 #include "lorapub.h"
 
 #include "broadcast_queue.h"
+#include "rfm95.h"
 
 static void sendGroundPacket1(uint8_t broadcastBegin);
 static void sendGroundPacket2(GPS_Data *data);
@@ -54,7 +55,8 @@ void vGroundCommStateMachine(void *argument) {
 
   // Binary array to store LoRa topic articles
   uint8_t loraRxData[LORA_MSG_LENGTH];
-
+  uint8_t* loraRxData_Skip4 = &loraRxData[4];
+  
   State *state          = State_getState();
   uint8_t broadcastFlag = 0;
 
@@ -78,23 +80,23 @@ void vGroundCommStateMachine(void *argument) {
       // --- Wait For Request ---
       // Block the state machine until a valid request is received from the ground.
       // Unwanted packets are filtered out and ignored.
-      if (xQueueReceive(subscription.queue, loraRxData, xFrequency) == pdPASS) {
-        // Check if the received message has the expected GCS Request ID
-        switch (loraRxData[LORA_MESSAGE_INDEX_ID]) {
-
-        case LORA_MESSAGE_ID_GCS_REQUEST:
+      //if (xQueueReceive(subscription.queue, loraRxData, 0) == pdPASS) {
+      //  // Check if the received message has the expected GCS Request ID
+      //  switch (loraRxData_Skip4[LORA_MESSAGE_INDEX_ID]) {
+      //
+      //  case LORA_MESSAGE_ID_GCS_REQUEST:
           // --- Transmit AV Data ---
-          vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(380));
+          vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
           sendGroundPacket1(broadcastFlag);
           // --- Transmit GPS Data ---
-          vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(380));
+          vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
           sendGroundPacket2(&gps->sampleData);
-          break;
-        default:
-          // Do not process if packet is invalid
-          break;
-        }
-      }
+      //    break;
+      //  default:
+      //    // Do not process if packet is invalid
+      //    break;
+      //  }
+      //}
 
       break;
 
@@ -111,12 +113,13 @@ void vGroundCommStateMachine(void *argument) {
     case COAST:
     case APOGEE:
     case DESCENT:
-      if (broadcastFlag) {
+      if (1) {
         // --- Broadcast Telemetry ---
         // Broadcast has already been started, continuously send data
         sendGroundPacket1(broadcastFlag);
+        vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
         sendGroundPacket2(&gps->sampleData);
-        vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(150));
+        vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
       }
 
       else {
@@ -132,6 +135,8 @@ void vGroundCommStateMachine(void *argument) {
       }
       break;
     }
+
+    vTaskDelayUntil(&xLastWakeTime, xFrequency);
   }
 }
 
@@ -143,6 +148,7 @@ void vGroundCommStateMachine(void *argument) {
  **
  * =============================================================================== */
 void sendGroundPacket1(uint8_t broadcastBegin) {
+  LoRa_t *lora    = DeviceList_getDeviceHandle(DEVICE_LORA).device;
 
   Accel_t *lAccel = DeviceList_getDeviceHandle(DEVICE_ACCEL_LOW).device;
   Accel_t *hAccel = DeviceList_getDeviceHandle(DEVICE_ACCEL_HIGH).device;
@@ -229,8 +235,11 @@ void sendGroundPacket1(uint8_t broadcastBegin) {
     Packet_asBytes(&packet, &message.data[0], packetSize);
   }
 
+  //message.length  = packetSize;
+
   // Send packet comment to LoRa author
-  xQueueSend(Queue_LoRa_Transmit, &message, 0);
+  RFM95_transmit(lora, message.data, packetSize);
+  //xQueueSend(Queue_LoRa_Transmit, &message, 0);
 }
 
 /* =============================================================================== */
@@ -240,13 +249,15 @@ void sendGroundPacket1(uint8_t broadcastBegin) {
  **
  * =============================================================================== */
 void sendGroundPacket2(GPS_Data *data) {
-
+  LoRa_t *lora    = DeviceList_getDeviceHandle(DEVICE_LORA).device;
+  
   LoRa_Message_t message;
-  message.length = 28;
+  message.length = 8;
 
   State *state       = State_getState();
   Quaternion q       = state->rotation;
 
+  
   uint8_t stateFlags = (state->flightState << 5);
 
   {
@@ -263,7 +274,7 @@ void sendGroundPacket2(GPS_Data *data) {
      * must be copied to a raw byte array (the bytes variable) for
      * transmission.
      *
-     * TODO:
+w     * TODO:
      * Is this even worth the overhead? not sure this could count
      * as being much more readable than the alternative...
      * Realistically this is good for implementation with dynamic
@@ -310,11 +321,15 @@ void sendGroundPacket2(GPS_Data *data) {
       };
 
     // Construct byte array from packet structure
-    Packet_asBytes(&packet, &message.data[0], message.length);
+    Packet_asBytes(&packet, &message.data[0], 28);
   }
 
+  //message.length = 28;
+
   // Send packet comment to LoRa author
-  xQueueSend(Queue_LoRa_Transmit, &message, 0);
+  //xQueueSend(Queue_LoRa_Transmit, &message, 0);
+  RFM95_transmit(lora, message.data, 28);
+
 }
 
 /** @} */
