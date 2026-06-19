@@ -180,7 +180,7 @@ bool SAM_M10Q_Parse(SAM_M10Q_t *gps) {
       data_ready = SAM_M10Q_Parse_GLL(gps, data);
     }
     // Exclude N from second field because it tends to report a maligned packet.
-    else if ((field0[0] == 'G') && (field0[1] != 'N') && (field0[2] == 'G') && (field0[3] == 'G') && (field0[4] == 'A')) {
+    else if ((field0[0] == 'G') && (field0[2] == 'G') && (field0[3] == 'G') && (field0[4] == 'A')) {
       data_ready = SAM_M10Q_Parse_GGA(gps, data);
     }
     
