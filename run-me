@@ -1,0 +1,1 @@
+clear && cmake -DCMAKE_TOOLCHAIN_FILE=australis/toolchain/toolchain.cmake -DHARDWARE_TARGET=AV2-dual . && make -j8
