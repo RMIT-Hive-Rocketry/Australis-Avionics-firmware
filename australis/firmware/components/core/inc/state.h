@@ -41,6 +41,7 @@ typedef struct {
   float tilt;
   float cosine;
   float altitude;
+  float altitude_old;
   float velocity;
   Quaternion rotation;
   SlidingWindow avgVel;

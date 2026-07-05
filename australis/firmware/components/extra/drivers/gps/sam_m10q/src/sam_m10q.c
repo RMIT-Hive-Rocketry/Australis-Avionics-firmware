@@ -110,7 +110,7 @@ bool SAM_M10Q_Parse(SAM_M10Q_t *gps) {
   char byte;
   static char    field0[6];
   static uint8_t field0_i;
-  static char    data[96];
+  static char    data[128];
   static uint8_t data_i;
   
   bool data_ready = false;
@@ -133,9 +133,8 @@ bool SAM_M10Q_Parse(SAM_M10Q_t *gps) {
         }
 
         break;
-
-
     
+
         // Save the first five bytes. If they a valid zero'th field, then accept it.
       case SMS_Field0:
 
@@ -143,9 +142,9 @@ bool SAM_M10Q_Parse(SAM_M10Q_t *gps) {
 
         if (field0_i > 5) {
           // If this is a GLL message, proceed, otherwise return to idle state.
-          // Refer to [1, pp.18] for field[1] comparisons
-          if ( ((field0[0] == 'G') && (field0[2] == 'G') && (field0[3] == 'L') && (field0[4] == 'L')) ||
-               ((field0[0] == 'G') && (field0[2] == 'G') && (field0[3] == 'G') && (field0[4] == 'A')) ) {
+          // Refer to [1, pp.18] for field0[1] comparisons
+          if ( strncmp(&field0[2], "GLL", 3) == 0 ||
+               strncmp(&field0[2], "GGA", 3) == 0 ) {
             state = SMS_Data;
             data_i = 0;
           } else {
@@ -154,7 +153,6 @@ bool SAM_M10Q_Parse(SAM_M10Q_t *gps) {
         }
     
         break;
-
 
     
         // Collect the data until a CRLF is detected.
@@ -176,11 +174,11 @@ bool SAM_M10Q_Parse(SAM_M10Q_t *gps) {
   
   if (state == SMS_Transmission_Complete) {
     
-    if ((field0[0] == 'G') && (field0[2] == 'G') && (field0[3] == 'L') && (field0[4] == 'L')) {
+    if (strncmp(&field0[2], "GLL", 3) == 0) {
       data_ready = SAM_M10Q_Parse_GLL(gps, data);
     }
     // Exclude N from second field because it tends to report a maligned packet.
-    else if ((field0[0] == 'G') && (field0[2] == 'G') && (field0[3] == 'G') && (field0[4] == 'A')) {
+    else if (strncmp(&field0[2], "GGA", 3) == 0) {
       data_ready = SAM_M10Q_Parse_GGA(gps, data);
     }
     
@@ -273,19 +271,20 @@ static bool SAM_M10Q_Parse_GGA(SAM_M10Q_t *gps, char* data) {
   // to send 'valid' packets that are full of nothing, in particular with GGA
   // messages than others.
   
-  for (uint8_t i = 2; (!(data[i-1] == '\r' && data[i] == '\n')); i++) {  
-
-    if (data[i-2] == data[i-1] == data[i] == ',') {
-      return false;
+  // Find where altitude is.
+  char* s_alt = data;
+  for (uint8_t comma = 0; comma != 8; comma++) {
+    while (s_alt[0] != ',') {
+      s_alt++;
     }
-    
+    s_alt++;
   }
-
   
-
-  // Grab altitude
-  char* s_alt = &data[47];
-
+  // If the field is empty, return early.
+  if (s_alt[0] == ',') {
+    return false;
+  }
+  
   // Find where the decimal place is.
   uint8_t dot = 0;
   while (s_alt[dot] != '.') {
@@ -314,6 +313,7 @@ static bool SAM_M10Q_Parse_GGA(SAM_M10Q_t *gps, char* data) {
     altitude_initial = altitude;
   }
 
+  state->altitude_old = state->altitude;
   state->altitude = altitude - altitude_initial;
   
 }

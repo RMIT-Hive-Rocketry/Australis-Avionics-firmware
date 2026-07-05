@@ -67,7 +67,8 @@ void vStateUpdate(void *argument) {
     switch (state->flightState) {
     case PRELAUNCH:
       if ((       accel->accelData[ZINDEX] >= ACCEL_LAUNCH) || \
-          (-1.0 * accel->accelData[ZINDEX] >= ACCEL_LAUNCH)) {
+          (-1.0 * accel->accelData[ZINDEX] >= ACCEL_LAUNCH) || \
+          (state->altitude - state->altitude_old > 10.0f)) {
         xEventGroupSetBits(xTaskEnableGroup, GROUP_TASK_ENABLE_FLASH);   // Enable flash
         xEventGroupSetBits(xTaskEnableGroup, GROUP_TASK_ENABLE_HIGHRES); // Enable high resolution data acquisition
         xEventGroupSetBits(xTaskEnableGroup, GROUP_TASK_ENABLE_LOWRES);  // Enable low resolution data acquisition
