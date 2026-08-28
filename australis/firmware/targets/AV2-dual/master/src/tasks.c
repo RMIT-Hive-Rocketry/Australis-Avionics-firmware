@@ -201,7 +201,7 @@ bool initTasks(void) {
   TaskHandle_t interruptTaskHandle;
   xTaskCreate(vEnableInterrupts, "interrupts", 128, NULL, tskIDLE_PRIORITY + 1, &interruptTaskHandle);
 
-  xTaskCreate(vFlashBuffer, "Flash Buffer", 256, NULL, tskIDLE_PRIORITY + 1, TaskList_new());
+  //xTaskCreate(vFlashBuffer, "Flash Buffer", 256, NULL, tskIDLE_PRIORITY + 1, TaskList_new());
 
   xTaskCreate(vBroadcastCallsign, "Callsign Broadcast", 256, NULL, tskIDLE_PRIORITY + 1, TaskList_new());
 

@@ -46,8 +46,8 @@
 #define ACCEL_SCALE_HIGH           32
 #define ACCEL_SCALE_LOW            16
 
-//#define FREQ_915
-#define FREQ_433
+#define FREQ_915
+//#define FREQ_433
 
 
 #endif
