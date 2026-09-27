@@ -1,0 +1,6 @@
+
+#define CAN_ID_LACCEL_RAW 0x401
+#define CAN_ID_LACCEL     0x403
+#define CAN_ID_HACCEL_RAW 0x405
+#define CAN_ID_HACCEL     0x407
+

@@ -16,7 +16,7 @@ typedef enum : uint32_t {
 #define CAN_LISTENERS_MAX 8
 // How many instances of listening to CAN?
 
-#define CAN_QUEUE_LENGTH 8
+#define CAN_QUEUE_LENGTH 16
 
 #define CAN_TRANSMISSION_QUEUE_LENGTH 16
 
