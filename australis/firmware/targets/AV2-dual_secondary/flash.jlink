@@ -1,0 +1,17 @@
+Device STM32F439II
+SelectInterface JTAG
+Speed auto
+
+/* Supervisor Chip */
+JTAGConf 9 2
+Connect
+LoadFile ../../../../output/bin/AV2-dual/AV2-dual_supervisor.elf
+Sleep 100
+
+/* Master Chip */
+JTAGConf 0 0
+Connect
+LoadFile ../../../../output/bin/AV2-dual/AV2-dual_master.elf
+Sleep 100
+
+Exit
