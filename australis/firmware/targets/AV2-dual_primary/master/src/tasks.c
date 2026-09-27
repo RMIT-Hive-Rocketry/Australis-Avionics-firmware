@@ -103,47 +103,6 @@ void USART3_IRQHandler(void *argument) {
 
 
 
-void vAerobrakesSendData(void *argument) {
-
-  const TickType_t xFrequency = pdMS_TO_TICKS(20); // 50Hz
-
-  while (1)
-    {
-      State *state = State_getState();
-
-      // Send CAN packets to the aerobrakes.
-      // In the aerobrakes firmware, data is cast to an integer to be used for
-      // a lookup table that controls the aerobrakes servo. For greater precision,
-      // the values are multiplied by ten before being sent.
-      switch (state->flightState) {
-      case LAUNCH:
-      case COAST:
-      case APOGEE:
-      case DESCENT:
-        CAN_Packet packet;
-        packet.id = CAN_ID_AB_Data;
-
-        // Fill data
-        uint16_t* can_altitude   = (uint16_t*)&packet.data.byte[0];
-        uint16_t* can_velocity   = (uint16_t*)&packet.data.byte[2];
-        _Float32* can_tilt_angle = (_Float32*)&packet.data.byte[4];
-
-        *can_altitude   = (uint16_t)(10.0 * state->altitude);
-        *can_velocity   = (uint16_t)(10.0 * state->velocity);
-        *can_tilt_angle = state->tilt;
-
-        packet.data.length  = 8;
-
-        CAN_Transmission_Queue_Add(&packet);
-      }
-
-      vTaskDelay(xFrequency);
-    }
-
-}
-
-
-
 void vGPS_Aquire(void *argument) {
 
   SAM_M10Q_t* gps = DeviceList_getDeviceHandle(DEVICE_GPS).device;
@@ -187,6 +146,11 @@ void vBroadcastCallsign(void *argument) {
 
 bool initTasks(void) {
 
+  xTaskCreate(vHDataAcquisition_Primary, "HDataAcq", 512, NULL, configMAX_PRIORITIES - 2, TaskList_new());
+  //TODO: revert the change of the next two lines.
+  xTaskCreate(vLDataAcquisition_Primary, "LDataAcq", 512, NULL, configMAX_PRIORITIES - 3, TaskList_new());
+  xTaskCreate(vStateUpdate, "StateUpdate", 512, NULL, configMAX_PRIORITIES - 4, TaskList_new());
+
   xTaskCreate(vHeartbeatBlink, "HeartbeatBlink", 128, NULL, configMAX_PRIORITIES - 1, TaskList_new());
   xTaskCreate(vStateLogic, "StateLogic", 128, NULL, tskIDLE_PRIORITY + 1, TaskList_new());
 
@@ -197,6 +161,7 @@ bool initTasks(void) {
 
   // xTaskCreate(vAerobrakesSendData, "AerobrakesData", 256, NULL, configMAX_PRIORITIES - 1, TaskList_new());
   // xTaskCreate(vCanTransmit, "CAN Transmit", 256, NULL, configMAX_PRIORITIES - 1, TaskList_new());
+  xTaskCreate(vCanReceive, "CAN Receive", 256, NULL, configMAX_PRIORITIES - 1, TaskList_new());
   
   TaskHandle_t interruptTaskHandle;
   xTaskCreate(vEnableInterrupts, "interrupts", 128, NULL, tskIDLE_PRIORITY + 1, &interruptTaskHandle);

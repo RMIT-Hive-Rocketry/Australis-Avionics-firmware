@@ -45,7 +45,7 @@ extern EventGroupHandle_t xTaskEnableGroup;
  *       frequency (e.g. dt = 1/SAMPLE_PERIOD_LOW;).
  **
  * =============================================================================== */
-void vLDataAcquisition(void *argument) {
+void vLDataAcquisition_Primary(void *argument) {
   float dt = 0.020;
   KalmanFilter kf;
   KalmanFilter_init(&kf);
@@ -91,15 +91,38 @@ void vLDataAcquisition(void *argument) {
 
   State *state                = State_getState();
 
+  // Create CAN queues to receive data.
+  CAN_Queue_t CAN_Queue_Baro_Ground_Pressure;
+  CAN_Queue_Create(&CAN_Queue_Baro_Ground_Pressure, CAN_ID_BARO_GROUND_PRESSURE);
+
+  CAN_Queue_t CAN_Queue_Baro_Pressure;
+  CAN_Queue_Create(&CAN_Queue_Baro_Pressure,        CAN_ID_BARO_PRESSURE);
+  
+  CAN_Queue_t CAN_Queue_Baro_Temperature;
+  CAN_Queue_Create(&CAN_Queue_Baro_Temperature,     CAN_ID_BARO_TEMPERATURE);
+
+  
   for (;;) {
     // Block until 20ms interval
     TickType_t xLastWakeTime = xTaskGetTickCount();
     vTaskDelayUntil(&xLastWakeTime, xFrequency);
 
-    taskENTER_CRITICAL();
-    baro->update(baro);
-    taskEXIT_CRITICAL();
+    // taskENTER_CRITICAL();
+    // baro->update(baro);
+    // taskEXIT_CRITICAL();
 
+    // Grab sensor data over CAN line.
+    uint8_t buffer[7];
+    while (xQueueReceive(CAN_Queue_Baro_Ground_Pressure.queue, &baro->groundPress, 0));
+    while (xQueueReceive(CAN_Queue_Baro_Pressure.queue,        &buffer[0],         0)) {
+      memcpy(&buffer[0], baro->rawPress, 3);
+      memcpy(&buffer[3], (uint8_t*)&baro->press, 4);
+    }
+    while (xQueueReceive(CAN_Queue_Baro_Temperature.queue,     &buffer[0], 0)) {
+      memcpy(&buffer[0], baro->rawTemp, 3);
+      memcpy(&buffer[3], (uint8_t*)&baro->temp, 4);
+    }
+    
     // Calculate altitude
     state->altitude = 44330 * (1.0 - pow(baro->press / baro->groundPress, 0.1903));
 
@@ -124,21 +147,7 @@ void vLDataAcquisition(void *argument) {
 }
 
 
-
-
-/*******************************************************************************
-
-This is an alternative task written up for IREC, because the BMP581 barometer on
- the master chip is broken on the 433 MHz radio board.
-Altitude is instead derived from the GNSS chip (SAM M10Q). This is done outside
- this program, thus this is only responsible for Kalman filter.
-
-This is not a long-term solution. We should have better handling for any faulty
- sensory in the future.
-
-*******************************************************************************/
-
-void vLDataAcquisition_BrokenBarometer(void *argument) {
+void vLDataAcquisition_Secondary(void *argument) {
   float dt = 0.020;
   KalmanFilter kf;
   KalmanFilter_init(&kf);
@@ -184,17 +193,50 @@ void vLDataAcquisition_BrokenBarometer(void *argument) {
 
   State *state                = State_getState();
 
+  
+  CAN_Packet CAN_Packet_Baro_Ground_Pressure;
+  CAN_Packet_Baro_Ground_Pressure.id = CAN_ID_BARO_GROUND_PRESSURE;
+  CAN_Packet_Baro_Ground_Pressur.data.length = 4;
+  
+  CAN_Packet CAN_Packet_Baro_Pressure;
+  CAN_Packet_Baro_Pressure.id = CAN_ID_BARO_PRESSURE;
+  CAN_Packet_Baro_Pressure.data.length = 7;
+
+  CAN_Packet CAN_Packet_Baro_Temperature;
+  CAN_Packet_Baro_Temperature.id = CAN_ID_BARO_TEMPERATURE;
+  CAN_Packet_Baro_Temperature.data.length = 7;
+
+
   for (;;) {
     // Block until 20ms interval
     TickType_t xLastWakeTime = xTaskGetTickCount();
     vTaskDelayUntil(&xLastWakeTime, xFrequency);
 
-    // Barometer update is pointless here.
+    taskENTER_CRITICAL();
+    baro->update(baro);
+    taskEXIT_CRITICAL();
 
-    // Calculate altitude is not necessary.
+    // Send sensor data over CAN.
+    memcpy(&CAN_Packet_Baro_Ground_Pressure.data.byte, (uint8_t*)&baro->groundPress, 4);
+    CAN_Transmission_Queue_Add(&CAN_Packet_Baro_Ground_Pressure);
 
-    // No need to add barometer data to dataframe.
+    memcpy(&CAN_Packet_Baro_Pressure.data.byte[0], baro->rawPress, 3);
+    memcpy(&CAN_Packet_Baro_Pressure.data.byte[3], (uint8_t*)&baro->press, 4);
+    CAN_Transmission_Queue_Add(&CAN_Packet_Baro_Pressure);
+
+    memcpy(&CAN_Packet_Baro_Temperature.data.byte[0], baro->rawTemp, 3);
+    memcpy(&CAN_Packet_Baro_Temperature.data.byte[3], (uint8_t*)&baro->temp, 4);
+    CAN_Transmission_Queue_Add(&CAN_Packet_Baro_Temperature);
     
+
+    // Calculate altitude
+    state->altitude = 44330 * (1.0 - pow(baro->press / baro->groundPress, 0.1903));
+
+    // Add sensor data and barometer data to dataframe
+    state->mem.append(&state->mem, HEADER_LOWRES);
+    state->mem.appendBytes(&state->mem, baro->rawTemp, baro->tempDataSize);
+    state->mem.appendBytes(&state->mem, baro->rawPress, baro->pressDataSize);
+
     // Only run calculations when enabled
     EventBits_t uxBits = xEventGroupWaitBits(xTaskEnableGroup, GROUP_TASK_ENABLE_LOWRES, pdFALSE, pdFALSE, blockTime);
     if (uxBits & GROUP_TASK_ENABLE_LOWRES) {
@@ -202,16 +244,10 @@ void vLDataAcquisition_BrokenBarometer(void *argument) {
       z.pData[0] = state->altitude;
       z.pData[1] = (state->cosine * 9.81 * accel->accelData[ZINDEX] - 9.81); // Acceleration measured in m/s^2
       kf.update(&kf, &z);
-      // I am concerned that the altitude being 'fixed' at one place for a long
-      // time, which will happen because the GNSS may not be configurable (had
-      // problems with TX lines before) and the message output may be fixed to
-      // a very low rate.
-      
+
       state->velocity = kf.x.pData[1];
-      // Don't need to update average pressure.
+      state->avgPress.append(&state->avgPress, baro->press);
       state->avgVel.append(&state->avgVel, state->velocity);
     }
   }
 }
-
-/** @} */
