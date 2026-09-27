@@ -81,23 +81,29 @@ void vHDataAcquisition_Primary(void *argument) {
   float accelEWMA = 0; // Moving average for acceleration vector magnitude
   float gyroEWMA  = 0; // Moving average for gyroscope rate vector magnitude
 
+  // Create CAN queues to receive data.
   CAN_Queue_t CAN_Queue_lAccel_Raw;
   CAN_Queue_Create(&CAN_Queue_lAccel_Raw, CAN_ID_LACCEL_RAW);
 
   CAN_Queue_t CAN_Queue_lAccel;
-  CAN_Queue_Create(&CAN_Queue_lAccel, CAN_ID_LACCEL);
+  CAN_Queue_Create(&CAN_Queue_lAccel,     CAN_ID_LACCEL);
   
   CAN_Queue_t CAN_Queue_hAccel_Raw;
   CAN_Queue_Create(&CAN_Queue_hAccel_Raw, CAN_ID_HACCEL_RAW);
   
   CAN_Queue_t CAN_Queue_hAccel;
-  CAN_Queue_Create(&CAN_Queue_hAccel, CAN_ID_HACCEL);
+  CAN_Queue_Create(&CAN_Queue_hAccel,     CAN_ID_HACCEL);
   
   for (;;) {
     // Block until 2ms interval
     TickType_t xLastWakeTime = xTaskGetTickCount();
     vTaskDelayUntil(&xLastWakeTime, xFrequency);
 
+    // Grab data from queues until they are flushed, so to prevent old data.
+    while (xQueueReceive(CAN_Queue_lAccel_Raw.queue, &lAccel->rawAccelData, 0));
+    while (xQueueReceive(CAN_Queue_lAccel.queue,     &lAccel->accelData,    0));
+    while (xQueueReceive(CAN_Queue_hAccel_Raw.queue, &hAccel->rawAccelData, 0));
+    while (xQueueReceive(CAN_Queue_hAccel.queue,     &hAccel->accelData,    0));
 
     // --- Select which accelerometer to use ---
     accelHandlePtr->device = (accel->accelData[ZINDEX] < 15) ? lAccel : hAccel;
@@ -217,6 +223,24 @@ void vHDataAcquisition_Secondary(void *argument) {
   float accelEWMA = 0; // Moving average for acceleration vector magnitude
   float gyroEWMA  = 0; // Moving average for gyroscope rate vector magnitude
 
+
+
+  CAN_Packet CAN_Packet_lAccel_Raw;
+  can_pack_lAccel.id = CAN_ID_LACCEL_RAW;
+  can_pack_lAccel_Raw.data.length = 6;
+  
+  CAN_Packet CAN_Packet_lAccel;
+  can_pack_lAccel.id = CAN_ID_LACCEL;
+  can_pack_lAccel_Raw.data.length = 6;
+
+  CAN_Packet CAN_Packet_hAccel_Raw;
+  can_pack_hAccel.id = CAN_ID_HACCEL_RAW;
+  can_pack_hAccel_Raw.data.length = 6;
+
+  CAN_Packet CAN_Packet_hAccel;
+  can_pack_hAccel.id = CAN_ID_HACCEL;
+  can_pack_hAccel_Raw.data.length = 6;
+  
   for (;;) {
     // Block until 2ms interval
     TickType_t xLastWakeTime = xTaskGetTickCount();
@@ -230,28 +254,16 @@ void vHDataAcquisition_Secondary(void *argument) {
     taskEXIT_CRITICAL();
 
     // Send sensor data over CAN.
-    CAN_Packet CAN_Packet_lAccel_Raw;
-    can_pack_lAccel.id = CAN_ID_LACCEL_RAW;
     memcpy(&can_pack_lAccel_Raw.data.byte, lAccel->rawAccelData, 6);
-    can_pack_lAccel_Raw.data.length = 6;
     CAN_Transmission_Queue_Add(&CAN_Packet_lAccel_Raw);
 
-    CAN_Packet CAN_Packet_lAccel;
-    can_pack_lAccel.id = CAN_ID_LACCEL;
     memcpy(&can_pack_lAccel.data.byte, lAccel->accelData, 6);
-    can_pack_lAccel_Raw.data.length = 6;
     CAN_Transmission_Queue_Add(&CAN_Packet_lAccel);
 
-    CAN_Packet CAN_Packet_hAccel_Raw;
-    can_pack_hAccel.id = CAN_ID_HACCEL_RAW;
     memcpy(&can_pack_hAccel_Raw.data.byte, hAccel->rawAccelData, 6);
-    can_pack_hAccel_Raw.data.length = 6;
     CAN_Transmission_Queue_Add(&CAN_Packet_hAccel_Raw);
 
-    CAN_Packet CAN_Packet_hAccel;
-    can_pack_hAccel.id = CAN_ID_HACCEL;
     memcpy(&can_pack_hAccel.data.byte, hAccel->rawAccelData, 6);
-    can_pack_hAccel_Raw.data.length = 6;
     CAN_Transmission_Queue_Add(&CAN_Packet_hAccel);
 
       
